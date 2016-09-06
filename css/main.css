@@ -1,0 +1,124 @@
+.board {
+	width: 480px;
+}
+.board__cell {
+	width: 12.5%;
+	height: 60px;
+	float: left;
+	background-repeat: no-repeat;
+}
+.container {
+	display: none;
+}
+.info-box{
+	color:green;
+	font-weight: 600;
+	line-height: 25px;
+	padding: 20px;
+}
+.white-cell {
+	background: #fff;
+}
+.black-cell {
+	background: #9999ff;
+}
+.green {
+	background: #0f0;
+}
+.red {
+	background: #f00;
+}
+form {
+	padding-top: 1px;
+}
+.modal {
+	width: 500px;
+	height: 150px;
+	margin: 100px auto 0 auto;
+	background: #636363;
+}
+.textfield {
+	display: block;
+	width: 200px;
+	margin: 5px auto ;
+	line-height: 25px;
+	font-size: 1.5em;
+	text-align: center;
+}
+.textfield:nth-of-type(1){
+	margin-top: 15px;
+}
+
+
+
+
+/*********************)**********************
+chess figures
+********************************************/
+
+
+
+.king_black {
+
+	background-image: url('../images/figures/king_black.png');
+
+}
+.queen_black {
+
+	background-image: url('../images/figures/queen_black.png');
+
+}
+.rook1_black, .rook2_black {
+
+	background-image: url('../images/figures/rook_black.png');
+
+}
+.knight1_black, .knight2_black {
+
+	background-image: url('../images/figures/knight_black.png');
+
+}
+.bishop1_black, .bishop2_black {
+
+	background-image: url('../images/figures/bishop_black.png');
+
+}
+.pawn1_black, .pawn2_black, .pawn3_black, 
+.pawn4_black, .pawn5_black, .pawn6_black, 
+.pawn7_black, .pawn8_black {
+
+	background-image: url('../images/figures/pawn_black.png');
+
+}
+.king_white {
+
+	background-image: url('../images/figures/king_white.png');
+
+}
+.queen_white {
+
+	background-image: url('../images/figures/queen_white.png');
+
+}
+.rook1_white, .rook2_white {
+
+	background-image: url('../images/figures/rook_white.png');
+
+}
+.knight1_white, .knight2_white {
+
+	background-image: url('../images/figures/knight_white.png');
+
+}
+.bishop1_white, .bishop2_white {
+
+	background-image: url('../images/figures/bishop_white.png');
+
+}
+.pawn1_white, .pawn2_white, .pawn3_white, 
+.pawn4_white, .pawn5_white, .pawn6_white, 
+.pawn7_white, .pawn8_white {
+
+	background-image: url('../images/figures/pawn_white.png');
+
+}

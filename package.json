@@ -1,0 +1,8 @@
+{
+  "name": "Chess-app",
+  "version": "1.0.0",
+  "dependencies": {
+    "graceful-chokidar": "^0.1.0",
+    "js-md5": "^0.4.1"
+  }
+}
