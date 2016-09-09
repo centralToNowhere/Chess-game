@@ -1,5 +1,5 @@
 document.querySelector('.chess-game').addEventListener("submit", function(e){
-  	
+  	document.querySelector('.block-notification').innerHTML = '';
   	e = e || window.e;
 	if (e.preventDefault) { 
     	e.preventDefault(); 
@@ -17,9 +17,18 @@ document.querySelector('.chess-game').addEventListener("submit", function(e){
 		};
 		xhr.send(JSON.stringify(data));
 		xhr.onload = function(){
-			if(this.responseText === 'data-error'){
-				var message = "Fields should contain only letters and numbers";
-				alert(message);
+			var message = '';
+			if(this.responseText === 'data-error' || this.responseText === 'Unauthorized'){
+				if(this.responseText === 'data-error'){
+					message = "Fields should contain only letters and numbers.";
+				}
+				if(this.responseText === 'Unauthorized' || xhr.status === 401){
+					message = "Game and password do not match.";
+				}
+				if(xhr.status >= 500){
+					message = "Internal server error";
+				}
+				document.querySelector('.block-notification').innerHTML = message;
 			}else{
 				try{
 					var t = JSON.parse(this.responseText);

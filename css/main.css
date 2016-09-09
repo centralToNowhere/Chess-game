@@ -7,6 +7,15 @@
 	float: left;
 	background-repeat: no-repeat;
 }
+.block-notification {
+	width: 200px;
+	margin: auto;
+	padding-top: 15px;
+	color: #fff;
+	font-weight: 600;
+	font-size: 1em;
+	text-align: left;
+}
 .container {
 	display: none;
 }
@@ -33,7 +42,7 @@ form {
 }
 .modal {
 	width: 500px;
-	height: 150px;
+	height: 200px;
 	margin: 100px auto 0 auto;
 	background: #636363;
 }

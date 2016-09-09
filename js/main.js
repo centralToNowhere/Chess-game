@@ -1,29 +1,46 @@
 var positions = {
 
 	set_updates: function(updates){
-		var i = 1;
 		for(var t in updates){
 
 			if(t !== 'deleted' && t !== 'current_move' && t !== 'current_side' && t !== 'name' && t !== 'password' && t !== 'is_it_a_first_move'){
 				if(typeof updates[t] !== 'string'){
 					this.matrix[updates[t][0]][updates[t][1]] = this.matrix[t.split('_')[0]][t.split('_')[1]];
-					this.data[this.matrix[t.split('_')[0]][t.split('_')[1]]] = updates[t];
+					console.log(updates[t], this.matrix[t.split('_')[0]][t.split('_')[1]]);
+					var transformed_figure_found = false;
+					for(var h in this.data){
+						if(this.data[h][0] === updates[t][0] && this.data[h][1] === updates[t][1]){
+							this.data[h] = [null, null];
+						}
+						if(h.match(/.+_.+_\d+/)){
+							if(this.data[h][0] === t.split('_')[0] - 0 && this.data[h][1] === t.split('_')[1] - 0){
+								this.data[h] = updates[t];
+								transformed_figure_found = true;
+								break;
+							}
+						}
+					}
+					if(transformed_figure_found === false){
+						this.data[this.matrix[t.split('_')[0]][t.split('_')[1]]] = updates[t];
+					}
 				}else{
 					this.matrix[t.split('_')[0]][t.split('_')[1]] = updates[t];
-					(function(){
-					//	console.log(this, t);
-						if(typeof this.data[updates[t]] == 'undefined'){
-							this.data[updates[t]] = [t.split('_')[0], t.split('_')[1]];
-						}else{
-							this.data[updates[t] + '_' + i] = [t.split('_')[0], t.split('_')[1]];
-							i++;
-						} 
-					}.apply(this, arguments));
+					var regex = '^' + updates[t].split('_')[0] + '_' + updates[t].split('_')[1] + '_+\\d$';
+					var regex = new RegExp(regex);
+					console.log(regex, 'queen_black'.match(regex));
+					for(var i in this.data){
+		                if(i.match(regex)){
+		                    var num = i.split('_')[2] - 0; // to number
+		                    var color = i.split('_')[1];
+		                    this.data[updates[t].split('_')[0] + '_' + color + '_' + ++num] = [t.split('_')[0] - 0, t.split('_')[1] - 0];
+		                }else{
+		                	this.data[updates[t] + '_1'] = [t.split('_')[0] - 0, t.split('_')[1] - 0];
+		                }
+		            }
 				}
 			}
 		}
 		for(var l = 0; l < updates.deleted.length; l++){
-			delete this.data[this.matrix[updates.deleted[l][0]][updates.deleted[l][1]]];
 			this.matrix[updates.deleted[l][0]][updates.deleted[l][1]] = null;
 		}
 		this.is_it_a_first_move = updates.is_it_a_first_move;
@@ -137,7 +154,11 @@ var positions = {
 							j <= coordinates[0] + 1 && k <= coordinates[1] + 1 && j >= coordinates[0] - 1 && k >= coordinates[1] - 1 && 
 							j < 8 && k < 8 && j >= 0 && k >= 0;){
 							if( j !== coordinates[0] || k !== coordinates[1]){
+
+
 								//castling
+
+
 								if(object.matrix[coordinates[0]][coordinates[1]] === 'king_white'){
 									if(object.is_it_a_first_move.king_white){
 										if('rook1_white' in object.data ){
@@ -213,7 +234,9 @@ var positions = {
 							                if(i === 3){
 												continue;                    
 											}
+
 											//transform queen
+
 											if(coordinates[0] === 1){
 												possible_cells.push([coordinates[0] + moves.vectors[i][0], coordinates[1] + moves.vectors[i][1], ['transform', 'queen_' + object.current_side]]);
 												continue;                      
@@ -538,6 +561,24 @@ var positions = {
 
 									//set callbacks on each of the possible cells for move
 									var arr = res.possible_cells.concat(res.possible_attacks);
+
+									// king can't be cut down
+									if(figure === 'king'){
+										var vector = [[1, 0],
+													[1, -1],
+													[1, 1],
+													[0, 1],
+													[0, -1],
+													[-1, 0],
+													[-1, 1],
+													[-1, -1]];
+										var spot = [j -0, k -0]; // to number anyway
+										vector.forEach(function(jk){
+											var j = spot[0] + jk[0];
+											var k = spot[1] + jk[1];
+											//
+										});
+									}
 									
 									// set executions of moves
 									for(var i = 0; i < arr.length; i++){										
@@ -571,6 +612,7 @@ var positions = {
 		xhr.open("GET", "/subscribe?rand=" + Math.random().toString().split('.')[1], true);
 		xhr.onload = function() {
 			var updates = JSON.parse(this.responseText);
+			console.log('UPDATES', updates);
 			positions.set_updates(updates);
 			positions.render();
 			positions.subscribe();

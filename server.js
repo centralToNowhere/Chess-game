@@ -278,19 +278,58 @@ var chess = {
     clients: [],
 
     persist_data: function(j, k, transform, l, m){
+        console.log('PERSIST');
         if(transform !== undefined){
             this.matrix[j][k] = transform;
+            var regex = '^' + transform.split('_')[0] + '_' + transform.split('_')[1] + '_+\\d$';
+            var regex = new RegExp(regex);
+            var found = false;
+            for(var i in this.data){
+                if(i.match(regex)){
+                    var num = i.split('_')[2] - 0; // to number
+                    var color = i.split('_')[1];
+                    this.data[transform + '_' + color + '_' + ++num] = [j - 0][k - 0];
+                    found = true;
+                    break;
+                }
+            }
+            if(found === false){
+                this.data[transform + '_1'] = [j - 0, k - 0];
+            }
         }else{
             this.matrix[l][m] = this.matrix[j][k];
+            var transformed_figure_found = false;
+            for(var h in this.data){
+                if(this.data[h][0] === l && this.data[h][1] === m){
+                    this.data[h] = [null, null];
+                }
+                console.log('1');
+                if(h.match(/.+_.+_\d+/)){
+                    console.log('2', this.data[h], j, k);
+                    if(this.data[h][0] === j && this.data[h][1] === k){
+                        console.log('3');
+                        console.log('KEY', h);
+                        this.data[h] = [l - 0, m - 0];
+                        console.log('DATA_AFTER_UPDATE', this.data[h], 'COORDINATES', l, m);
+                        transformed_figure_found = true;
+                        break;
+                    }
+                }
+            }
+            if(transformed_figure_found === false){
+                this.data[this.matrix[l][m]] = [l - 0, m - 0];
+            }
         }
     },
 
     delete_data: function(j, k){
+        console.log('DELETE');
         this.matrix[j][k] = null;
     },
 
     publish: function (updates){
         updates = JSON.parse(updates);
+        console.log(updates);
         var games = '';
         var readStream = fs.createReadStream(__dirname + DATA);
         readStream
@@ -303,6 +342,7 @@ var chess = {
             .on('close', function(){
                     // try{
                         var parsed = JSON.parse(games);
+                        console.log('NEW', parsed);
                         var buffer = [];
                         if(parsed[updates.name] !== undefined){
                             if(parsed[updates.name][0].password === md5(updates.password) ||
@@ -372,7 +412,7 @@ var chess = {
                                                 }
 
 
-                                                // code for taking a pass delete 
+                                                // code for a pass delete 
                                                 // not yet
                                                 //
 
@@ -416,7 +456,7 @@ var chess = {
 
                         
                         //parsed to data.json
-
+                        console.log('OLD', parsed);
                         var writeStream = fs.createWriteStream(__dirname + DATA);
                         writeStream.write(JSON.stringify(parsed));
                         
