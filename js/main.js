@@ -6,7 +6,7 @@ var positions = {
 			if(t !== 'deleted' && t !== 'current_move' && t !== 'current_side' && t !== 'name' && t !== 'password' && t !== 'is_it_a_first_move'){
 				if(typeof updates[t] !== 'string'){
 					this.matrix[updates[t][0]][updates[t][1]] = this.matrix[t.split('_')[0]][t.split('_')[1]];
-					console.log(updates[t], this.matrix[t.split('_')[0]][t.split('_')[1]]);
+					
 					var transformed_figure_found = false;
 					for(var h in this.data){
 						if(this.data[h][0] === updates[t][0] && this.data[h][1] === updates[t][1]){
@@ -27,7 +27,7 @@ var positions = {
 					this.matrix[t.split('_')[0]][t.split('_')[1]] = updates[t];
 					var regex = '^' + updates[t].split('_')[0] + '_' + updates[t].split('_')[1] + '_+\\d$';
 					var regex = new RegExp(regex);
-					console.log(regex, 'queen_black'.match(regex));
+					
 					for(var i in this.data){
 		                if(i.match(regex)){
 		                    var num = i.split('_')[2] - 0; // to number
@@ -54,7 +54,6 @@ var positions = {
 				var k = i % 8;
 				var name = this.board_cells[i].className.split(' ')[2];
 				
-				//console.log(this.matrix[j][k], this.board_cells[i].className);
 				if(typeof name !== 'undefined'){
 					if(name !== this.matrix[j][k]){
 						this.board_cells[i].className = this.board_cells[i].className.replace(name, this.matrix[j][k]);
@@ -124,7 +123,12 @@ var positions = {
 			}
 		}
 	},
-	get_moves: function(moves, j, k, object){
+	get_moves: function(moves, j, k, object, side){
+				if(side === undefined){
+					side = object.current_side;
+				}
+				side = object.current_side;
+
 				var possible_cells = [];
 				var possible_attacks = [];
 				var coordinates = [j, k];
@@ -137,7 +141,7 @@ var positions = {
 								if( object.matrix[j][k] === null){
 									possible_cells.push([j, k]);
 								}else{ // positions for attack
-									if(  object.matrix[j][k].split('_')[1] !== object.current_side ){
+									if(  object.matrix[j][k].split('_')[1] !== side ){
 										possible_attacks.push([j, k]);
 									}
 									break;
@@ -207,7 +211,7 @@ var positions = {
 								if( object.matrix[j][k] === null ){
 									possible_cells.push([j, k]);
 								}else{ // positions for attack
-									if(  object.matrix[j][k].split('_')[1] !== object.current_side ){
+									if(  object.matrix[j][k].split('_')[1] !== side ){
 										possible_attacks.push([j, k]);
 									}
 									break;
@@ -232,7 +236,7 @@ var positions = {
 									if(i === 1 || i === 2){
 										continue;
 									}
-									if(object.current_side === 'white'){
+									if(side === 'white'){
 										if(coordinates[0] !== 6){
 							                if(i === 3){
 												continue;                    
@@ -241,7 +245,7 @@ var positions = {
 											//transform queen
 
 											if(coordinates[0] === 1){
-												possible_cells.push([coordinates[0] + moves.vectors[i][0], coordinates[1] + moves.vectors[i][1], ['transform', 'queen_' + object.current_side]]);
+												possible_cells.push([coordinates[0] + moves.vectors[i][0], coordinates[1] + moves.vectors[i][1], ['transform', 'queen_' + side]]);
 												continue;                      
 											}
 										}
@@ -253,7 +257,7 @@ var positions = {
 						                    }
 						                    //transform queen
 						                    if(coordinates[0] === 6){
-												possible_cells.push([coordinates[0] + moves.vectors[i][0], coordinates[1] + moves.vectors[i][1], ['transform', 'queen_' + object.current_side]]);
+												possible_cells.push([coordinates[0] + moves.vectors[i][0], coordinates[1] + moves.vectors[i][1], ['transform', 'queen_' + side]]);
 												continue;                      
 											}
 				                       	}
@@ -263,7 +267,7 @@ var positions = {
 									possible_cells.push([coordinates[0] + moves.vectors[i][0], coordinates[1] + moves.vectors[i][1]]);           
 							    }     
 							}else{
-								if(object.matrix[coordinates[0] + moves.vectors[i][0]][coordinates[1] + moves.vectors[i][1]].split('_')[1] !== object.current_side){
+								if(object.matrix[coordinates[0] + moves.vectors[i][0]][coordinates[1] + moves.vectors[i][1]].split('_')[1] !== side){
 									if(object.matrix[coordinates[0]][coordinates[1]].split('_')[0].match(/pawn\d/)){
 						                if(i === 3 || i === 0){
 						                	if(i === 0){
@@ -272,14 +276,14 @@ var positions = {
 						                	}
 											continue;                    
 										}else{
-											if(object.current_side === 'white'){
+											if(side === 'white'){
 												if(coordinates[0] === 1){
-													possible_attacks.push([coordinates[0] + moves.vectors[i][0], coordinates[1] + moves.vectors[i][1], ['transform', 'queen_' + object.current_side]]);
+													possible_attacks.push([coordinates[0] + moves.vectors[i][0], coordinates[1] + moves.vectors[i][1], ['transform', 'queen_' + side]]);
 													continue;
 												}
 											}else{
 												if(coordinates[0] === 6){
-													possible_attacks.push([coordinates[0] + moves.vectors[i][0], coordinates[1] + moves.vectors[i][1], ['transform', 'queen_' + object.current_side]]);
+													possible_attacks.push([coordinates[0] + moves.vectors[i][0], coordinates[1] + moves.vectors[i][1], ['transform', 'queen_' + side]]);
 													continue;
 												}
 											}
@@ -573,30 +577,33 @@ var positions = {
 									//scan check or stalemate
 									//delete moves from arr to prevent king's vanishing
 									var to_delete = moves.scanCheckmate();
-
-
+									
 									for(var y in to_delete){
 										if(y === data_figure){
 											to_delete[y].forEach(function(deleted){
-												arr.forEach(function(el2, index){
-													if(deleted[0] === el2[0] && deleted[1] === el2[1]){
-														arr.splice(index, 1);
+												for(var a = 0; arr.length > a; a++){
+													if(deleted[0] === arr[a][0] && deleted[1] === arr[a][1]){
+														arr.splice(a, 1);
+														a--;
 													}
-												});
-												res.possible_cells.forEach(function(el1, index){
-													if(deleted[0] === el1[0] && deleted[1] === el1[1]){
-														res.possible_cells.splice(index, 1);
+												}
+												debugger;
+												for(var a = 0; a < res.possible_cells.length; a++){
+													if(deleted[0] === res.possible_cells[a][0] && deleted[1] === res.possible_cells[a][1]){
+														res.possible_cells.splice(a, 1);
+														a--;
 													}
-												});
-												res.possible_attacks.forEach(function(el1, index){
-													if(deleted[0] === el1[0] && deleted[1] === el1[1]){
-														res.possible_attacks.splice(index, 1);
+												}
+												for(var a = 0; a < res.possible_attacks.length; a++){
+													if(deleted[0] === res.possible_attacks[a][0] && deleted[1] === res.possible_attacks[a][1]){
+														res.possible_attacks.splice(a, 1);
+														a--;
 													}
-												});
+												}
 											});	
 										}
 									}
-									console.log('TO DELETE RESULT:\n', arr, to_delete, res);
+									
 									
 
 									// set executions of moves
@@ -624,10 +631,10 @@ var positions = {
 						Function.prototype.curry = function(){
 						    var fn = this, args = Array.prototype.slice.call(arguments);
 						    return function(){
-						        return fn.apply(this, Array.prototype.slice.call(arguments).concat(args));
+						        return fn.apply(this, args.concat(Array.prototype.slice.call(arguments)));
 						    };
 						}
-						var fn = moves.tools.moves_intersection.curry(moves_for_delete, reg2);		
+						var fn = moves.tools.moves_intersection.curry(moves_for_delete);		
 						var king = this.data['king_' + this.current_side];
 						var king_nearist_cells = [[king[0] + 1, king[1] + 1],
 												[king[0] - 1, king[1] - 1],
@@ -639,7 +646,33 @@ var positions = {
 												[king[0] - 1, king[1] + 1]];
 
 						for(var h in this.data){
-							if(h.match(reg1)){
+							if(h === 'king_' + side){
+								if(this.is_it_a_first_move[h] === true){
+									if(side === 'white'){
+										var cells = [[7, 2], [7, 3], [7, 4] [7, 5], [7, 6]];
+									}
+									if(side === 'black'){
+										var cells = [[0, 2], [0, 3], [0, 4], [0, 5], [0, 6]];
+									}
+									var rt = fn(cells, this.data, reg1, 'intersection');
+									
+									if(rt.length !== 0){
+										for(var z = 0;z < rt.length;z++){
+											if(rt[z][1] === 2 || rt[z][1] === 3 || rt[z][1] === 4){
+												moves_for_delete['king_' + side].push([rt[z][0], 2]);
+											}
+											if(rt[z][1] === 5 || rt[z][1] === 6){
+												moves_for_delete['king_' + side].push([rt[z][0], 6]);
+											}
+											if(rt[z][1] === 4){
+												moves_for_delete['king_' + side].push([rt[z][0], 2]);
+												moves_for_delete['king_' + side].push([rt[z][0], 6]);
+											}
+										}
+									}
+								}
+							}
+							if(h.match(reg1) && this.data[h][0] !== null && this.data[h][1] !== null){
 								var figure = h.split('_')[0];
 								var j = this.data[h][0];
 								var k = this.data[h][1];
@@ -655,7 +688,7 @@ var positions = {
 												moves_for_delete['king' + '_' + this.current_side].push(cell);
 											}
 											if(j + move[0] === king[0] && k + move[1] === king[1]){
-												moves_for_delete = fn([j, k], this.data);
+												moves_for_delete = fn([j, k], this.data, reg1);
 											}
 										}, object);
 									}, object);
@@ -670,14 +703,14 @@ var positions = {
 										}
 									}, object);
 								}
-								if(figure === 'bishop' || figure === 'rock' || figure === 'queen'){
-									console.log(figure);
+								if(figure === 'bishop' || figure === 'rook' || figure === 'queen'){
+									
 									for(var z = 0; z < temp.length; z++){
 										var move = temp[z];
 										var cells = [];
 										var buf = [];
 										for(var l = move[0], m = move[1], j = this.data[h][0] + l, k = this.data[h][1] + m; j < 8 && k < 8 && j >= 0 && k >= 0; j = j + l, k = k + m){
-											console.log(j, k);	
+											
 											if(cells.length === 0 ){
 												cells.push([j - l, k - m]);
 											}
@@ -691,7 +724,7 @@ var positions = {
 											for(var w = 0; w < king_nearist_cells.length; w++){
 												var cell = king_nearist_cells[w];
 												if((cell[0] === j && cell[1] === k) || (king[0] === j && king[1] === k)){
-													console.log(cells, buf);
+													
 													if(buf.length === 0){
 														moves_for_delete['king' + '_' + this.current_side].push([j, k]);
 														
@@ -728,10 +761,11 @@ var positions = {
 
 					tools: {
 
-						moves_intersection: function(arr, object){
-							console.log('Object:', arguments);
-							var moves_for_delete = arguments[2];
-							var reg2 = arguments[3];
+						moves_intersection: function(moves_for_delete, arr, object, reg){
+							
+								moves_for_delete = arguments[0] === undefined ? [] : arguments[0];
+								var intersection = [];
+							reg = arguments[3] === undefined ? new RegExp('.+_' + this.current_side): arguments[3];
 							if(typeof object === 'string'){
 								var str = object;
 								object = {};
@@ -739,23 +773,25 @@ var positions = {
 							}
 							for(var t in object){
 
-								if(t.match(reg2) && t.match(/^king/) === null && this.data[t][0] !== null){
+								if(t.match(reg) && t.match(/^king/) === null && this.data[t][0] !== null){
 									var f = t.split('_')[0];
 									f = f[f.length-1].match( /[0-9]/) != null ? f.substr(0, f.length-1) : f;
 									if(f.match(/pawn/) != null ){
 										f = f + '_' + t.split('_')[1];
 									}
-									var all_moves = this.get_moves(moves[f](), this.data[t][0], this.data[t][1], this);
+									var all_moves = this.get_moves(moves[f](), this.data[t][0], this.data[t][1], this, t.split('_')[1]);
 									all_moves = all_moves.possible_cells.concat(all_moves.possible_attacks);
 									for(var b = 0; b < all_moves.length; b++){
 										for(var c = 0; c < arr.length; c++){
 											var trig = 0;
 											if(arr[c][0] === all_moves[b][0] && arr[c][1] === all_moves[b][1]){
 												trig = 1;
+												
+												intersection.push(all_moves[b]);
 												break;
 											}
 										}
-										if(trig === 0){
+										if(trig === 0 && (arguments[4] === 'except_inersection' || arguments[4] === undefined)){
 											if(moves_for_delete[t]){
 												moves_for_delete[t].push(all_moves[b]);
 											}else{
@@ -766,7 +802,15 @@ var positions = {
 									}
 								}
 							}
-							return moves_for_delete;
+							if(arguments[4] === 'except_inersection' || arguments[4] === undefined){
+								return moves_for_delete;
+							}else{
+								if(arguments[4] === 'intersection'){
+									return intersection;
+								}
+								return {};
+							}
+
 						}.bind(object),
 					}
 				}
@@ -786,13 +830,13 @@ var positions = {
 		xhr.open("GET", "/subscribe?rand=" + Math.random().toString().split('.')[1], true);
 		xhr.onload = function() {
 			var updates = JSON.parse(this.responseText);
-			console.log('UPDATES', updates);
+			
 			positions.set_updates(updates);
 			positions.render();
 			positions.subscribe();
 		}
 		xhr.onerror = function(){
-			console.log('TIMEOUT');
+			
 			setTimeout(positions.subscribe, 500);
 		};
 
