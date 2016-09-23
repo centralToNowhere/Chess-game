@@ -649,7 +649,7 @@ var positions = {
 							if(h === 'king_' + side){
 								if(this.is_it_a_first_move[h] === true){
 									if(side === 'white'){
-										var cells = [[7, 2], [7, 3], [7, 4] [7, 5], [7, 6]];
+										var cells = [[7, 2], [7, 3], [7, 4], [7, 5], [7, 6]];
 									}
 									if(side === 'black'){
 										var cells = [[0, 2], [0, 3], [0, 4], [0, 5], [0, 6]];
