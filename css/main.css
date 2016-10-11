@@ -1,11 +1,16 @@
 .board {
 	width: 480px;
+	height: 480px;
+	margin: 0 auto;
+	margin-top: 75px;
+	margin-bottom: 30px;
 }
 .board__cell {
 	width: 12.5%;
 	height: 60px;
 	float: left;
 	background-repeat: no-repeat;
+	background-size: contain !important;
 }
 .block-notification {
 	width: 200px;
@@ -16,20 +21,89 @@
 	font-size: 1em;
 	text-align: left;
 }
-.container {
-	display: none;
+
+
+
+.chat{
+	height: 530px;
+	overflow-y: auto;
+	padding: 25px;
+	background: #EFEEF1;
+	padding-top:35px;
 }
-.info-box{
-	color:green;
-	font-weight: 600;
+.message-block{
+	position: relative;
 	line-height: 25px;
-	padding: 20px;
+    padding: 10px 15px 10px 15px;
+    background: #CED0B6;
+    margin-top: 5px;
+    overflow-wrap: break-word;
+}
+.message-block.your-message{
+	background: #99ff99;
+}
+.message-block.other-message{
+	background: #ffff80;
+}
+.message-block:before{
+    content: '';
+    position: absolute;
+    float:left;
+    left: -20px;
+    top: 0px;
+    border: 10px solid transparent;
+    border-right: 10px solid #CED0B6;
+    border-top: 10px solid #CED0B6;
+}
+.message-block:first-child{
+	margin-top: 0;
+}
+.message-block.other-message:before{
+	float:left;
+	border-right: 10px solid #ffff80;
+    border-top: 10px solid #ffff80;
+}
+.message-block.your-message:before{
+	float: right;
+    left: 100%;
+    border-right: 10px solid transparent;
+    border-left: 10px solid #99ff99;
+    border-top: 10px solid #99ff99;
+}
+.chat-form{
+	height: 120px;
+	padding: 25px;
+	padding-top: 5px;
+	background: #EFEEF1;
+}
+.chat-form textarea {
+	width: 100%;
+	resize: none;
+	box-sizing: border-box;
+    padding: 10px;
+}
+.chat-button{
+	display: block;
+	float:right;
+	width:100px;
+	height: 30px;
+	margin-top:6px;
+}
+.chat-container{
+	float:left;
+	width:100%;
+}
+
+
+
+.container-fluid {
+	display: none;
 }
 .white-cell {
 	background: #fff;
 }
 .black-cell {
-	background: #9999ff;
+	background: #CED0B6;
 }
 .green {
 	background: #0f0;
@@ -44,7 +118,7 @@ form {
 	width: 500px;
 	height: 200px;
 	margin: 100px auto 0 auto;
-	background: #636363;
+	background: #CED0B6;
 }
 .textfield {
 	display: block;
@@ -130,4 +204,35 @@ chess figures
 
 	background-image: url('../images/figures/pawn_white.png');
 
+}
+
+
+
+/*********************)**********************
+media
+********************************************/
+
+@media (min-width: 768px) {
+
+}
+@media (min-width: 992px) {
+	.chat-container{
+		width:398.66px;
+		margin-left:-398.66px;
+	}
+	.board-container{
+		padding-right:398.66px !important;
+	}
+}
+@media (min-width: 1200px) {
+
+}
+@media (max-width: 510px){
+	.board{
+		width:100%;
+		height: auto;
+	}
+	.chat-container{
+		margin-top: 30px;
+	}
 }

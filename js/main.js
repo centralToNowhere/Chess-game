@@ -1,8 +1,12 @@
 var positions = {
 
-	set_updates: function(updates){
+	set_updates: function(updates){	
 		for(var t in updates){
-
+			if(t === 'game_status'){
+				var messageBox = new MessageBox();
+				messageBox.push(updates[t]);
+				return;
+			}
 			if(t !== 'deleted' && t !== 'current_move' && t !== 'current_side' && t !== 'name' && t !== 'password' && t !== 'is_it_a_first_move'){
 				if(typeof updates[t] !== 'string'){
 					this.matrix[updates[t][0]][updates[t][1]] = this.matrix[t.split('_')[0]][t.split('_')[1]];
@@ -827,10 +831,9 @@ var positions = {
 	},
 	subscribe: function(){
 		var xhr = new XMLHttpRequest();
-		xhr.open("GET", "/subscribe?rand=" + Math.random().toString().split('.')[1], true);
+		xhr.open("GET", "/subscribe?name=" + this.name + "&rand=" + Math.random().toString().split('.')[1], true);
 		xhr.onload = function() {
 			var updates = JSON.parse(this.responseText);
-			
 			positions.set_updates(updates);
 			positions.render();
 			positions.subscribe();

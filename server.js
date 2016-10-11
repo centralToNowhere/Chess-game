@@ -4,6 +4,7 @@ var url = require('url');
 var md5 = require('js-md5');
 var chokidar = require('graceful-chokidar');
 const DATA = "/data.json";
+const querystring = require('querystring');
 
 http.createServer(function(req, res) {
     var urlParsed = url.parse(req.url);
@@ -12,6 +13,9 @@ http.createServer(function(req, res) {
         case '/':
             sendFile("/index.html", res);
             break;
+
+        //// create game/login ////
+
         case '/auth':
             var data = '';
 
@@ -33,8 +37,47 @@ http.createServer(function(req, res) {
 
             break;
 
+
+        //// chat ////
+
+
+        case '/chat_subscribe':
+            var data = '';
+
+            req
+                .on('readable', function(){
+                    data = onReadable(data, req, res);
+                })
+                .on('end', function() {
+                    console.log('chat_subscribe');
+                    chat.subscribe(data, res);
+                });
+            break;
+        case '/chat_publish':
+            var data = '';
+
+            req
+                .on('readable', function(){
+                    data = onReadable(data, req, res);
+                })
+                .on('end', function() {
+                    try {
+                        chat.publish(data);
+                    } catch (e) {
+                        res.statusCode = 400;
+                        res.end("Bad Request");
+                        return;
+                    }
+                    res.end("ok");
+                });
+            break;
+
+
+        //// chess game /////
+
+
         case '/subscribe':
-            console.log('subscribe');
+            console.log('subscribe', chess.clients.length);
             chess.subscribe(req, res);
             break;
 
@@ -47,31 +90,39 @@ http.createServer(function(req, res) {
                     data = onReadable(data, req, res);
                 })
                 .on('end', function() {
-                    try {
+                    try{
                         chess.publish(data);
-                    } catch (e) {
+                        console.log('WUTWUTWUT   UWUT');
+                    }catch(e) {
+                        console.log(e);
                         res.statusCode = 400;
                         res.end("Bad Request");
                         return;
                     }
                     res.end("ok");
                 });
+            break;
 
-      break;
 
-    default:
-        if(urlParsed.pathname.match(/\/css\/+./) || 
-            urlParsed.pathname.match(/\/js\/+./) || 
-            urlParsed.pathname.match(/\/images\/+./)){
+        //// assets /////
 
-            sendFile(urlParsed.pathname, res);
+        default:
+            if(urlParsed.pathname.match(/\/css\/+./) || 
+                urlParsed.pathname.match(/\/js\/+./) || 
+                urlParsed.pathname.match(/\/images\/+./)){
 
-        }else{
-            res.statusCode = 404;
-            res.end("Not found");
+                sendFile(urlParsed.pathname, res);
+
+            }else{
+                res.statusCode = 404;
+                res.end("Not found");
+            }
         }
-    }
 }).listen(3000);
+
+
+
+
 
 
 // setInterval((function(){
@@ -88,8 +139,9 @@ http.createServer(function(req, res) {
 scanActiveGame();
 
 function scanActiveGame(games_old){
+    console.log(games_old);
     if(games_old == undefined){
-        games_old = '';
+        games_old = {};
     }
     var games = '';
     var global = '';
@@ -100,55 +152,67 @@ function scanActiveGame(games_old){
             games = onReadable(games, readStream);
         })
         .on('end', function() {
-            try{
+            // try{
+                console.log('END', games);
                 var parsed = JSON.parse(games);
-            }catch(e){
-                console.log('data.json is empty. No active games found.');
-                var watcher = chokidar.watch(__dirname + DATA, {persistent: true});
-                watcher
-                    .on('change', function(){
-                        console.log('changed');
-                        watcher.close();
-                        scanActiveGame();
-                    });
-                return;
-            }     
+            // }catch(e){
+            //     console.log(e, 'data.json is empty. No active games found.');
+            //     var watcher = chokidar.watch(__dirname + DATA, {persistent: true});
+            //     watcher
+            //         .on('change', function(){
+            //             console.log('changed');
+            //             watcher.close();
+            //             scanActiveGame();
+            //         });
+            //     return;
+            // }
             for(var name in parsed){
                 if(games_old[name]){
                     for(var j = 0;j < 8; j++){
                         for(var k = 0;k < 8; k++){
                             if(parsed[name].matrix[j][k] === games_old[name].matrix[j][k]){
+                                console.log('comntinue');
                                 continue;
                             }else{
                                 j, k = 8;
+                                console.log('save');
                                 save.push(name);
                             }
                         }                
                     }
+                }else{
+                    console.log('push');
+                    save.push(name);
                 }
             }
+            var after_delete = deleteGame(save, parsed);
             setTimeout((function(){
-                var games_old = parsed;
+                var games_old = after_delete;
                 var to_save = save;
                 return function(){
                     //console.log(to_save);
                     scanActiveGame(games_old);
-                    deleteGame(to_save, games_old);
+                    console.log(to_save, games_old);
                 }; 
-            })(), 900000);
-
+            })(), 30000);
         });
 };
 
 function deleteGame(save, games_old){
+    console.log('DELETE---------', save, games_old);
     for(var i in games_old){
         //console.log(i, save.indexOf(i));
         if(save.indexOf(i) === -1){
+            console.log('DELETE_GAME', games_old[i]);
             delete games_old[i];
+            console.log(games_old);
         }
     }
+
+    console.log('AAAA', JSON.stringify(games_old));
     var writeStream = fs.createWriteStream(__dirname + DATA);
     writeStream.write(JSON.stringify(games_old));
+    return games_old;
 }
 
 function sendFile(fileName, res) {
@@ -272,6 +336,52 @@ function auth_validate(data, res){
         res.end("data-error");
     }
 }
+var chat = {
+    clients: [],
+    subscribe: function(data, res){
+        var sub = [data, res];
+        this.clients.push(sub);
+        console.log('Chat clients', this.clients);
+        res.on('close', function(){
+            for(var i = 0; i < chat.clients.length; i++){
+                if(chat.clients[i][1] === this ){
+                    chat.clients.splice(i, 1);
+                    i--;
+                }
+            }
+        });
+    },
+    publish: function(data){
+        data = JSON.parse(data);
+        console.log('DATA', data.message);
+        var to_send = {
+            message: data.message,
+        }
+        for(var i = 0; i < this.clients.length; i++){
+            if(data.status !== undefined){
+
+                /// service messages
+
+            }else{
+                var client = JSON.parse(this.clients[i][0]);
+                /// chat messages
+                console.log(client.name, data.name);
+                if(client.name === data.name){
+                    if(client.id === data.id){
+                        to_send.whose = 'you';
+                    }
+                    if(client.id !== data.id){
+                        to_send.whose = 'other';
+                    }
+                    console.log('TO SEND', to_send);
+                    this.clients[i][1].end(JSON.stringify(to_send));
+                    this.clients.splice(i, 1);
+                    i--;
+                }
+            }
+        }
+    }
+};
 
 var chess = {
 
@@ -327,9 +437,8 @@ var chess = {
         this.matrix[j][k] = null;
     },
 
-    publish: function (updates){
-        updates = JSON.parse(updates);
-        console.log(updates);
+    publish: function (data){
+        var updates = JSON.parse(data);
         var games = '';
         var readStream = fs.createReadStream(__dirname + DATA);
         readStream
@@ -340,9 +449,7 @@ var chess = {
                 games = onReadable(games, readStream);
             })
             .on('close', function(){
-                    // try{
                         var parsed = JSON.parse(games);
-                        console.log('NEW', parsed);
                         var buffer = [];
                         if(parsed[updates.name] !== undefined){
                             if(parsed[updates.name][0].password === md5(updates.password) ||
@@ -437,6 +544,19 @@ var chess = {
                                 }
                                 
                             }
+                        }else{
+                            updates = {
+                                game_status: 'end', 
+                            }   
+                            var to_update = JSON.stringify(updates);
+                            for(var i = 0; i < chess.clients.length; i++){
+                                if(chess.clients[i][0] === updates.name){
+                                    chess.clients[i][1].end(to_update);
+                                    chess.clients.splice(i, 1);
+                                    i--;
+                                }
+                            }
+                            return;
                         }
 
 
@@ -464,11 +584,14 @@ var chess = {
                         delete updates.password;
                         delete updates.current_side;
 
-                        updates = JSON.stringify(updates);
-                        chess.clients.forEach(function(res){
-                            res.end(updates);
-                        });
-                        chess.clients = [];
+                        var to_update = JSON.stringify(updates);
+                        for(var i = 0; i < chess.clients.length; i++){
+                            if(chess.clients[i][0] === updates.name){
+                                chess.clients[i][1].end(to_update);
+                                chess.clients.splice(i, 1);
+                                i--;
+                            }
+                        }
                     // }catch(e){
                     //     console.log('Can\'t parse data.json', e);
                     // }
@@ -476,13 +599,18 @@ var chess = {
     },
 
     subscribe: function(req, res){
-        this.clients.push(res);
+        var url_common = url.parse(req.url);
+        var arr = [querystring.parse(url_common.query).name, res];
+        this.clients.push(arr);
         var object = this;
         res.on('close', function(){
-                object.clients.splice(object.clients.indexOf(res), 1);
-            });
-        //setTimeout(function(){req.destroy()}, 5000);
-        console.log(chess.clients.length);
+            for(var i = 0; i < chess.clients.length; i++){
+                if(chess.clients[i][1] === this ){
+                    chess.clients.splice(i, 1);
+                    i--;
+                }
+            }
+        });
     },
 
     get_moves: function(moves, j, k, object){
