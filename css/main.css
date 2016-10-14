@@ -55,6 +55,11 @@
     border-right: 10px solid #CED0B6;
     border-top: 10px solid #CED0B6;
 }
+.time_block{
+	font-size: 0.8em;
+	line-height: 10px;
+	padding-top:5px;
+}
 .message-block:first-child{
 	margin-top: 0;
 }
@@ -133,8 +138,6 @@ form {
 }
 
 
-
-
 /*********************)**********************
 chess figures
 ********************************************/
@@ -211,7 +214,11 @@ chess figures
 /*********************)**********************
 media
 ********************************************/
-
+@media (min-width: 510px) {
+	.board__cell{
+		height: 60px !important;
+	}
+}
 @media (min-width: 768px) {
 
 }

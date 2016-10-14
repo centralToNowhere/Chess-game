@@ -52,8 +52,28 @@
 						};
 						chatBox.submit(onsubmit);
 						if(t.password_player2 !== undefined){
-							var message = 'player 2 password: ' + t.password_player2;
+							message = 'player 2 password: ' + t.password_player2;
 							chatBox.push(message);
+						}
+						if(t.win !== undefined){
+							positions.win = t.win;
+						}
+						if(t.game_status !== undefined){
+							positions.game_status = t.game_status;
+							switch(positions.game_status){
+								case 'progress':
+									message = 'Game is in progress';
+									break;
+								case 'end':
+									message = 'Game over. ';
+									if(positions.win !== '' && positions.win !== 'stalemate'){
+										message += positions.win[0].toUpperCase() + positions.win.slice(1) + ' won.';
+									}else if(positions.win === 'stalemate'){
+										message += 'Stalemate.';
+									}
+									break;
+							}
+							chatBox.push(message)
 						}
 						document.querySelector('.container-fluid ').style.display = 'block';
 						document.querySelector('.modal').style.display = 'none';
@@ -154,7 +174,13 @@ var MessageBox = (function(){
 					break;
 			}
 			console.log('NODE', node_to_push);
+			var time = new Date(), 
+				time_block = document.createElement('div');
+			time = time.getHours() + ":" + time.getMinutes() + ":" + time.getSeconds();
+			time_block.className = "time_block";
+			time_block.innerHTML = time;
 			node_to_push.innerHTML = message;
+			node_to_push.appendChild(time_block);
 			this.box.appendChild(node_to_push);
 			if(scrollTop !== scrollHeight){
 				this.box.scrollTop = scrollHeight;
@@ -205,12 +231,13 @@ var MessageBox = (function(){
 
 (function(){
 	window.addEventListener('resize', function(){
+		var cells = document.querySelectorAll('.board__cell');
+		var style = getComputedStyle(cells[0]);	
 		if(document.documentElement.clientWidth <= 510){
-			var cells = document.querySelectorAll('.board__cell');
 			cells.forEach(function(cell){
-				var style = getComputedStyle(cell);
 				cell.style.height = style.width;
 			});
 		}
 	}, false);
 }());
+var chatBox = new MessageBox();

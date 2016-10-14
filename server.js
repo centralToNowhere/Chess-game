@@ -171,7 +171,6 @@ function scanActiveGame(games_old){
                     for(var j = 0;j < 8; j++){
                         for(var k = 0;k < 8; k++){
                             if(parsed[name].matrix[j][k] === games_old[name].matrix[j][k]){
-                                console.log('comntinue');
                                 continue;
                             }else{
                                 j, k = 8;
@@ -192,24 +191,19 @@ function scanActiveGame(games_old){
                 return function(){
                     //console.log(to_save);
                     scanActiveGame(games_old);
-                    console.log(to_save, games_old);
                 }; 
             })(), 30000);
         });
 };
 
 function deleteGame(save, games_old){
-    console.log('DELETE---------', save, games_old);
     for(var i in games_old){
         //console.log(i, save.indexOf(i));
         if(save.indexOf(i) === -1){
-            console.log('DELETE_GAME', games_old[i]);
             delete games_old[i];
-            console.log(games_old);
         }
     }
 
-    console.log('AAAA', JSON.stringify(games_old));
     var writeStream = fs.createWriteStream(__dirname + DATA);
     writeStream.write(JSON.stringify(games_old));
     return games_old;
@@ -271,6 +265,8 @@ function auth_validate(data, res){
                                 current_move: games[data.name][0].current_move,
                                 name: games[data.name][0].name,
                                 password: data.password,
+                                game_status: games[data.name].game_status,
+                                win: games[data.name].win,
                             };
                             
                             res.end(JSON.stringify(updates1));
@@ -283,6 +279,8 @@ function auth_validate(data, res){
                                 current_move: games[data.name][1].current_move,
                                 name: games[data.name][1].name,
                                 password: data.password,
+                                game_status: games[data.name].game_status,
+                                win: games[data.name].win,
                             };
                             
                             res.end(JSON.stringify(updates2));
@@ -302,6 +300,8 @@ function auth_validate(data, res){
                     games[data.name][0].current_side = 'white';
                     games[data.name][0].current_move = true;
 
+
+
                     var number_of_chars = Math.round(3 + Math.random() * 3);
                     var password_player2 = '';
                     for(var i = 0; i < number_of_chars; i++){
@@ -314,6 +314,7 @@ function auth_validate(data, res){
                     games[data.name][1].current_side = 'black';
                     games[data.name][1].current_move = false;
 
+
                     var updates1 = {
                         data: games[data.name].data,
                         matrix: games[data.name].matrix,
@@ -322,7 +323,7 @@ function auth_validate(data, res){
                         current_move: games[data.name][0].current_move,
                         name: games[data.name][0].name,
                         password: data.password,
-                        password_player2: password_player2
+                        password_player2: password_player2,
                     };
 
                     var writeStream = fs.createWriteStream(__dirname + DATA);
@@ -353,7 +354,6 @@ var chat = {
     },
     publish: function(data){
         data = JSON.parse(data);
-        console.log('DATA', data.message);
         var to_send = {
             message: data.message,
         }
@@ -438,6 +438,7 @@ var chess = {
     },
 
     publish: function (data){
+        console.log('Publish', data)
         var updates = JSON.parse(data);
         var games = '';
         var readStream = fs.createReadStream(__dirname + DATA);
@@ -546,6 +547,7 @@ var chess = {
                             }
                         }else{
                             updates = {
+                                name: updates.name,
                                 game_status: 'end', 
                             }   
                             var to_update = JSON.stringify(updates);
@@ -573,20 +575,33 @@ var chess = {
                         parsed[updates.name][1].current_move = id === 0 ? true : false;
                         current_move.black = parsed[updates.name][1].current_move;
 
-
+                        // game_status update
+                        console.log('CHECKMATE\n\n\n\n\n\n');
+                        if(updates.game_status !== undefined){
+                            console.log('STATUS_TRUE', updates.game_status);
+                            parsed[updates.name].game_status = updates.game_status;
+                        }
+                        if(updates.win !== undefined){
+                            console.log('WIN_TRUE', updates.win);
+                            parsed[updates.name].win = updates.win;
+                        }
                         
                         //parsed to data.json
-                        console.log('OLD', parsed);
                         var writeStream = fs.createWriteStream(__dirname + DATA);
                         writeStream.write(JSON.stringify(parsed));
                         
                         updates.current_move = current_move;
                         delete updates.password;
                         delete updates.current_side;
+                        console.log('OLD', updates);
+
 
                         var to_update = JSON.stringify(updates);
+                        console.log('TO_STRING', to_update, chess.clients.length);
                         for(var i = 0; i < chess.clients.length; i++){
+                            console.log(chess.clients[i][0], updates.name);
                             if(chess.clients[i][0] === updates.name){
+                                console.log('UPDATE', to_update);
                                 chess.clients[i][1].end(to_update);
                                 chess.clients.splice(i, 1);
                                 i--;
@@ -1021,5 +1036,7 @@ function game(){
         rook2_black: true,
         king_white: true,
         king_black: true
-    }
+    },
+    this.game_status = 'progress',
+    this.win = ''
 };

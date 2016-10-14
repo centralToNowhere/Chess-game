@@ -3,11 +3,16 @@ var positions = {
 	set_updates: function(updates){	
 		for(var t in updates){
 			if(t === 'game_status'){
-				var messageBox = new MessageBox();
-				messageBox.push(updates[t]);
-				return;
+				console.log('UPDATES', updates[t], updates['win']);
+				positions.game_status = updates[t];
+				if(updates['win'] !== undefined){
+					positions.win = updates['win'];
+				}
+				//show game status somewhere
+				console.log(updates[t]);
+				this.set_game_status();
 			}
-			if(t !== 'deleted' && t !== 'current_move' && t !== 'current_side' && t !== 'name' && t !== 'password' && t !== 'is_it_a_first_move'){
+			if(t !== 'deleted' && t !== 'current_move' && t !== 'current_side' && t !== 'name' && t !== 'password' && t !== 'is_it_a_first_move' && t !== 'game_status' && t !== 'win' && t !== 'check'){
 				if(typeof updates[t] !== 'string'){
 					this.matrix[updates[t][0]][updates[t][1]] = this.matrix[t.split('_')[0]][t.split('_')[1]];
 					
@@ -44,11 +49,20 @@ var positions = {
 				}
 			}
 		}
-		for(var l = 0; l < updates.deleted.length; l++){
-			this.matrix[updates.deleted[l][0]][updates.deleted[l][1]] = null;
+		if(updates.deleted !== undefined){
+			for(var l = 0; l < updates.deleted.length; l++){
+				this.matrix[updates.deleted[l][0]][updates.deleted[l][1]] = null;
+			}
 		}
-		this.is_it_a_first_move = updates.is_it_a_first_move;
-		this.current_move = updates.current_move[this.current_side];
+		if(updates.is_it_a_first_move !== undefined){
+			this.is_it_a_first_move = updates.is_it_a_first_move;
+		}
+		if(updates.current_move !== undefined){
+			this.current_move = updates.current_move[this.current_side];
+		}
+		if(updates.check !== undefined){
+			this.check = updates.check;
+		}
 	},
 	// add css classes to DOM elements from matrix object 
 	render: function(pos_cells, flag){
@@ -311,7 +325,9 @@ var positions = {
 	execute_move: function(start_j, start_k, finish_j, finish_k, embeded_move, object){
 
 					//store callbacks to remove it later
-					object.callbacks.push([callback, finish_j*8 + finish_k]);
+					if(finish_j !== undefined && finish_k !== undefined){
+						object.callbacks.push([callback, finish_j*8 + finish_k]);
+					}
 
 
 
@@ -320,51 +336,52 @@ var positions = {
 						var updates = {
 							deleted: [],
 						};
-
-						for(var i = 0; i < object.callbacks.length; i++){
-							object.board_cells[object.callbacks[i][1]].removeEventListener('click', object.callbacks[i][0], false);
-						}
-
-						//castling
-						if(object.matrix[start_j][start_k] === 'king_' + object.current_side){
-							object.is_it_a_first_move['king_' + object.current_side] = false;
-						}
-						if(object.matrix[start_j][start_k] === 'rook1_' + object.current_side){
-							object.is_it_a_first_move['rook1_' + object.current_side] = false;
-						}
-						if(object.matrix[start_j][start_k] === 'rook2_' + object.current_side){
-							object.is_it_a_first_move['rook2_' + object.current_side] = false;
-						}
-
-
-
-					//	object.board_cells[finish_j*8 + finish_k].className = object.board_cells[finish_j*8 + finish_k].className.replace(' ' + object.matrix[finish_j][finish_k], "");
-						// if(object.matrix[finish_j][finish_k] !== null){
-						// 	updates.deleted.push([finish_j, finish_k]);
-						// }
-						if(finish_j !== start_j || finish_k !== start_k){
-							updates.deleted.push([start_j, start_k]);
-						}
-					//	object.matrix[finish_j][finish_k] = object.matrix[start_j][start_k];
-						updates[start_j + '_' + start_k] = [finish_j, finish_k];
-					//	object.board_cells[start_j*8 + start_k].className = object.board_cells[start_j*8 + start_k].className.replace(' ' + object.matrix[start_j][start_k], "");
-					//	object.matrix[start_j][start_k] = null;
-						if(typeof embeded_move === 'object'){
-							if(embeded_move[0] === 'castling'){
-							//	object.board_cells[embeded_move[3]*8 + embeded_move[4]].className = object.board_cells[embeded_move[3]*8 + embeded_move[4]].className.replace(' ' + object.matrix[embeded_move[3]][embeded_move[4]], "");
-							//	object.matrix[embeded_move[3]][embeded_move[4]] = object.matrix[embeded_move[1]][embeded_move[2]];
-								updates[embeded_move[1] + '_' + embeded_move[2]] = [embeded_move[3], embeded_move[4]];
-								updates.deleted.push([embeded_move[1], embeded_move[2]]);
-							//	object.board_cells[embeded_move[1]*8 + embeded_move[2]].className = object.board_cells[embeded_move[1]*8 + embeded_move[2]].className.replace(' ' + object.matrix[embeded_move[1]][embeded_move[2]], "");
-							//	object.matrix[embeded_move[1]][embeded_move[2]] = null;
-							//	object.is_it_a_first_move['king_' + object.current_side] = false;
+						if(start_j !== undefined && start_k !== undefined && finish_k !== undefined && finish_j !== undefined){
+							for(var i = 0; i < object.callbacks.length; i++){
+								object.board_cells[object.callbacks[i][1]].removeEventListener('click', object.callbacks[i][0], false);
 							}
-							if(embeded_move[0] === 'transform'){
-								if(typeof embeded_move[1] === 'string'){
-								//	object.board_cells[finish_j*8 + finish_k].className = object.board_cells[finish_j*8 + finish_k].className.replace(' ' + object.matrix[finish_j][finish_k], "");
-								//	object.matrix[finish_j][finish_k] = embeded_move[1];
-									//delete updates[start_j + '_' + start_k];
-									updates[finish_j + '_' + finish_k] = embeded_move[1];
+
+							//castling
+							if(object.matrix[start_j][start_k] === 'king_' + object.current_side){
+								object.is_it_a_first_move['king_' + object.current_side] = false;
+							}
+							if(object.matrix[start_j][start_k] === 'rook1_' + object.current_side){
+								object.is_it_a_first_move['rook1_' + object.current_side] = false;
+							}
+							if(object.matrix[start_j][start_k] === 'rook2_' + object.current_side){
+								object.is_it_a_first_move['rook2_' + object.current_side] = false;
+							}
+
+
+
+						//	object.board_cells[finish_j*8 + finish_k].className = object.board_cells[finish_j*8 + finish_k].className.replace(' ' + object.matrix[finish_j][finish_k], "");
+							// if(object.matrix[finish_j][finish_k] !== null){
+							// 	updates.deleted.push([finish_j, finish_k]);
+							// }
+							if(finish_j !== start_j || finish_k !== start_k){
+								updates.deleted.push([start_j, start_k]);
+							}
+						//	object.matrix[finish_j][finish_k] = object.matrix[start_j][start_k];
+							updates[start_j + '_' + start_k] = [finish_j, finish_k];
+						//	object.board_cells[start_j*8 + start_k].className = object.board_cells[start_j*8 + start_k].className.replace(' ' + object.matrix[start_j][start_k], "");
+						//	object.matrix[start_j][start_k] = null;
+							if(typeof embeded_move === 'object'){
+								if(embeded_move[0] === 'castling'){
+								//	object.board_cells[embeded_move[3]*8 + embeded_move[4]].className = object.board_cells[embeded_move[3]*8 + embeded_move[4]].className.replace(' ' + object.matrix[embeded_move[3]][embeded_move[4]], "");
+								//	object.matrix[embeded_move[3]][embeded_move[4]] = object.matrix[embeded_move[1]][embeded_move[2]];
+									updates[embeded_move[1] + '_' + embeded_move[2]] = [embeded_move[3], embeded_move[4]];
+									updates.deleted.push([embeded_move[1], embeded_move[2]]);
+								//	object.board_cells[embeded_move[1]*8 + embeded_move[2]].className = object.board_cells[embeded_move[1]*8 + embeded_move[2]].className.replace(' ' + object.matrix[embeded_move[1]][embeded_move[2]], "");
+								//	object.matrix[embeded_move[1]][embeded_move[2]] = null;
+								//	object.is_it_a_first_move['king_' + object.current_side] = false;
+								}
+								if(embeded_move[0] === 'transform'){
+									if(typeof embeded_move[1] === 'string'){
+									//	object.board_cells[finish_j*8 + finish_k].className = object.board_cells[finish_j*8 + finish_k].className.replace(' ' + object.matrix[finish_j][finish_k], "");
+									//	object.matrix[finish_j][finish_k] = embeded_move[1];
+										//delete updates[start_j + '_' + start_k];
+										updates[finish_j + '_' + finish_k] = embeded_move[1];
+									}
 								}
 							}
 						}
@@ -373,13 +390,13 @@ var positions = {
 						updates.name = object.name;
 						updates.password = object.password;
 						updates.current_move = object.current_move;
-						
-
+						updates.win = object.win;
+						updates.game_status = object.game_status;						
 						
 
 						// send position object to server
 						object.publish(updates);
-
+						console.log('STATUS SEND', updates);
 						// render board
 						// object.render();
 
@@ -581,7 +598,7 @@ var positions = {
 									//scan check or stalemate
 									//delete moves from arr to prevent king's vanishing
 									var to_delete = moves.scanCheckmate();
-									
+									console.log(to_delete);
 									for(var y in to_delete){
 										if(y === data_figure){
 											to_delete[y].forEach(function(deleted){
@@ -591,7 +608,6 @@ var positions = {
 														a--;
 													}
 												}
-												debugger;
 												for(var a = 0; a < res.possible_cells.length; a++){
 													if(deleted[0] === res.possible_cells[a][0] && deleted[1] === res.possible_cells[a][1]){
 														res.possible_cells.splice(a, 1);
@@ -607,11 +623,49 @@ var positions = {
 											});	
 										}
 									}
-									
-									
+									var all_moves_side = moves.tools.moves_intersection(undefined, [], this.data);
+									for(var y in to_delete){
+										to_delete[y].forEach(function(d){
+											for(var u in all_moves_side){
+												for(var a = 0; all_moves_side[u].length > a; a++){
+													if(d[0] === all_moves_side[u][a][0] && d[1] === all_moves_side[u][a][1]){
+														console.log('true');
+														all_moves_side[u].splice(a, 1);
+														a--;
+													}
+												}
+											}
+										});
+									}
+									var all_moves_side_length = 0;
+									for(var u in all_moves_side){
+										for(var a = 0; all_moves_side[u].length > a; a++){
+											all_moves_side_length++;
+										}		
+									}
 
+									/// if checkmate
+
+									if(all_moves_side_length === 0 && this.check === this.current_side){
+										this.win = this.current_side === 'white' ? 'black' : 'white';
+										this.game_status = 'end';
+										console.log('Now Execute');
+
+										///execute move only to send information about checkmate
+										this.execute_move(undefined, undefined, undefined, undefined, undefined, this)();
+									}
+									
+									/// if stalemate
+
+									if(all_moves_side_length === 0 && this.check === ''){
+										this.win = 'stalemate';
+										this.game_status = 'end';
+
+										///execute move only to send information about stalemate
+										this.execute_move(undefined, undefined, undefined, undefined, undefined, this)();
+									}
 									// set executions of moves
-									for(var i = 0; i < arr.length; i++){							
+									for(var i = 0; i < arr.length; i++){
 										this.board_cells[arr[i][0]*8 + arr[i][1]].addEventListener('click', 
 											this.execute_move(j, k, arr[i][0], arr[i][1], arr[i][2], this), false);
 									}
@@ -625,6 +679,9 @@ var positions = {
 
 							}.apply(object, arguments);
 						},
+					
+					//delete moves from arr to prevent king's vanishing
+
 					scanCheckmate: function(){
 						var op_side = this.current_side === 'black' ? 'white' : 'black';
 						var side = this.current_side;
@@ -650,6 +707,7 @@ var positions = {
 												[king[0] - 1, king[1] + 1]];
 
 						for(var h in this.data){
+							/// possibility of castling
 							if(h === 'king_' + side){
 								if(this.is_it_a_first_move[h] === true){
 									if(side === 'white'){
@@ -676,6 +734,7 @@ var positions = {
 									}
 								}
 							}
+							// removing prohibited fields from moves array
 							if(h.match(reg1) && this.data[h][0] !== null && this.data[h][1] !== null){
 								var figure = h.split('_')[0];
 								var j = this.data[h][0];
@@ -691,7 +750,10 @@ var positions = {
 											if(j + move[0] === cell[0] && k + move[1] === cell[1]){
 												moves_for_delete['king' + '_' + this.current_side].push(cell);
 											}
+											/// if check by knight
 											if(j + move[0] === king[0] && k + move[1] === king[1]){
+												this.check = this.current_side;
+												this.set_game_status();
 												moves_for_delete = fn([j, k], this.data, reg1);
 											}
 										}, object);
@@ -702,7 +764,10 @@ var positions = {
 										if((j + temp[1][0] === cell[0] && k + temp[1][1] === cell[1]) || (j + temp[2][0] === cell[0] && k + temp[2][1] === cell[1])){
 											moves_for_delete['king' + '_' + this.current_side].push(cell);
 										}
+										///if check by pawn
 										if((j + temp[1][0] === king[0] && k + temp[1][1] === king[1]) || (j + temp[2][0] === king[0] && k + temp[2][1] === king[1])){
+											this.check = this.current_side;
+											this.set_game_status();
 											moves_for_delete = fn([j, k], this.data);
 										}
 									}, object);
@@ -732,7 +797,11 @@ var positions = {
 													if(buf.length === 0){
 														moves_for_delete['king' + '_' + this.current_side].push([j, k]);
 														
+
+														/// if check
 														if((king[0] === j + l && king[1] === k + m) || (king[0] === j  && king[1] === k)){
+															this.check = this.current_side;
+															this.set_game_status();
 															moves_for_delete = fn(cells, this.data);
 														}
 													}
@@ -765,9 +834,14 @@ var positions = {
 
 					tools: {
 
+						/// arguments[4]:
+						///             'intersection' - return intersection possible moves ///              		between object and arr;
+						///              'except_intersection' - return arr moves that does not 
+						///                     intersect other figures moves(for example,  ///                     returns all knight's moves to delete if the ///                     knight can't save the king from check)
+
 						moves_intersection: function(moves_for_delete, arr, object, reg){
 							
-								moves_for_delete = arguments[0] === undefined ? [] : arguments[0];
+							moves_for_delete = arguments[0] === undefined ? [] : arguments[0];
 								var intersection = [];
 							reg = arguments[3] === undefined ? new RegExp('.+_' + this.current_side): arguments[3];
 							if(typeof object === 'string'){
@@ -785,9 +859,10 @@ var positions = {
 									}
 									var all_moves = this.get_moves(moves[f](), this.data[t][0], this.data[t][1], this, t.split('_')[1]);
 									all_moves = all_moves.possible_cells.concat(all_moves.possible_attacks);
+									var trig = 0;
 									for(var b = 0; b < all_moves.length; b++){
 										for(var c = 0; c < arr.length; c++){
-											var trig = 0;
+											trig = 0;
 											if(arr[c][0] === all_moves[b][0] && arr[c][1] === all_moves[b][1]){
 												trig = 1;
 												
@@ -820,7 +895,7 @@ var positions = {
 				}
 				return moves.backlight_move;
 
-			})(), false);
+			}()), false);
 		}
 	},
 	publish: function(updates){
@@ -834,9 +909,14 @@ var positions = {
 		xhr.open("GET", "/subscribe?name=" + this.name + "&rand=" + Math.random().toString().split('.')[1], true);
 		xhr.onload = function() {
 			var updates = JSON.parse(this.responseText);
-			positions.set_updates(updates);
+			positions.set_updates(updates); 
 			positions.render();
 			positions.subscribe();
+			/// click on king and fast click to empty space to check if there are no moves at all if so, it should be checkmate or stalemate
+			/// i know it is crutch
+			var e = new Event('click'); 
+			document.querySelector('.king_' + positions.current_side).dispatchEvent(e);
+			document.body.dispatchEvent(e);
 		}
 		xhr.onerror = function(){
 			
@@ -844,6 +924,20 @@ var positions = {
 		};
 
 		xhr.send('');
+	},
+	set_game_status: function(){
+		var message = '';
+		switch(positions.game_status){
+			case 'end':
+				message = 'Game over. ';
+				if(positions.win !== '' && positions.win !== 'stalemate'){
+					message += positions.win[0].toUpperCase() + positions.win.slice(1) + ' won.';
+				}else if(positions.win === 'stalemate'){
+					message += 'Stalemate.';
+				}
+				chatBox.push(message);
+				break;
+		}
 	},
 	board_cells: (function(){
 
@@ -937,6 +1031,9 @@ var positions = {
     current_move: '',
     callbacks: [],
     name: '',
+    game_status: 'progress',
+    win: '',
+    check: '',
 };
 
 
