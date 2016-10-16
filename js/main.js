@@ -77,7 +77,7 @@ var positions = {
 						this.board_cells[i].className = this.board_cells[i].className.replace(name, this.matrix[j][k]);
 					}
 				}else{
-					this.board_cells[i].className = this.board_cells[i].className += " " + this.matrix[j][k];
+					this.board_cells[i].className = this.board_cells[i].className + " " + this.matrix[j][k];
 				}
 			}
 		// green moves
@@ -649,7 +649,6 @@ var positions = {
 									if(all_moves_side_length === 0 && this.check === this.current_side){
 										this.win = this.current_side === 'white' ? 'black' : 'white';
 										this.game_status = 'end';
-										console.log('Now Execute');
 
 										///execute move only to send information about checkmate
 										this.execute_move(undefined, undefined, undefined, undefined, undefined, this)();

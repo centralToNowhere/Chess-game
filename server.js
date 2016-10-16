@@ -238,7 +238,7 @@ function onReadable(data, req, res){
 function auth_validate(data, res){
     var data = JSON.parse(data);
     var file = '';
-    if(data.name.match(/^[A-Za-z0-9]{3,8}$/) && data.password.match(/^[A-Za-z0-9]{3,6}$/)){
+    if(data.name.match(/^[A-Za-z0-9]{3,12}$/) && data.password.match(/^[A-Za-z0-9]{3,12}$/)){
         var readStream = fs.createReadStream(__dirname + DATA);
         readStream
             .on('error', function() {
