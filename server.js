@@ -192,7 +192,7 @@ function scanActiveGame(games_old){
                     //console.log(to_save);
                     scanActiveGame(games_old);
                 }; 
-            })(), 30000);
+            })(), 300000);
         });
 };
 

@@ -29,6 +29,7 @@
 
 
 
+
 .chat{
 	height: 530px;
 	overflow-y: auto;
@@ -42,13 +43,19 @@
     padding: 10px 15px 10px 15px;
     background: #CED0B6;
     margin-top: 5px;
+	border-bottom-right-radius: 10px;
+	border-top-right-radius: 10px;
+	border-bottom-left-radius: 10px;
     overflow-wrap: break-word;
 }
 .message-block.your-message{
 	background: #99ff99;
+	border-top-left-radius: 10px;
+	border-top-right-radius: 0px;
 }
 .message-block.other-message{
 	background: #ffff80;
+	border-top-right-radius: 10px;
 }
 .message-block:before{
     content: '';
@@ -59,6 +66,8 @@
     border: 10px solid transparent;
     border-right: 10px solid #CED0B6;
     border-top: 10px solid #CED0B6;
+    width: 0px;
+    display: block;
 }
 .time_block{
 	font-size: 0.8em;
@@ -130,6 +139,17 @@ form {
 	height: 200px;
 	margin: 100px auto 0 auto;
 	background: #CED0B6;
+	position: relative;
+	border-radius: 10px;
+}
+.modal .game-title{
+	position: absolute;
+	width: 350px;
+	font-size: 2em;
+	text-align: center;
+	left: 50%;
+	top: -70px;
+	margin-left: -175px;
 }
 .textfield {
 	display: block;
