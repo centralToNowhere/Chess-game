@@ -3,7 +3,7 @@
 
 (function(){
 
-	document.querySelector('.chess-game').addEventListener("submit", function(e){
+	document.querySelector('.game-auth').addEventListener("submit", function(e){
 	  	document.querySelector('.block-notification').innerHTML = '';
 	  	e = e || window.e;
 		if (e.preventDefault) { 
@@ -73,7 +73,7 @@
 						/// So we have autonomous chatbox.
 
 						loadScript('js/chat.js', function(){
-						var chatBox = new MessageBox();
+						window.chatBox = new MessageBox();
 							
 						var onsubmit = function(message){
 							var game = positions.name;

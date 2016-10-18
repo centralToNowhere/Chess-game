@@ -95,6 +95,31 @@ var positions = {
 							}
 							this.board_cells[i].className += " " + 'green';
 							this.move_status = 'selection';
+
+							/* function get_possible_moves set callbacks on each
+								board cell. Callback calculates possible moves for current figure, set another callbacks for obtained cells and return cells as array in render function to set css class on it. Then we are waiting for second click on green or red fields to execute move. In render function also we need to set callback on document in case of we want to change figure. Click on document should remove green and red fields of previous chosen figure. 
+								There we have two types of callback:
+									click on board__cell is to:
+										chose figure or
+										chose move
+									click on document is to:
+										disable choosing
+								positions.move_status:
+									null        - chose figure
+									'selection' - chose move
+								Control provided by e.stopPropagation();
+								We set positions.move_status in backlight_move to know
+								are we choosing figure or move. In other words, is it a first
+								click on clear board or second when green and red cells have special callbacks for move execution.
+								After each click on board__cells:
+								1 				moves appears (green and red)
+								2				click on document to hide it
+								So, when we clicking for choosing figure we don't need 2.
+								We set positions.move_status to 'selection' and STOP propagation of click on DOCUMENT. Green and red cells remain.
+								When we need chose move, we want only 2. But as 2 proceed instantly after 1, we see clear board - function below executes and:
+								1 				remove all moves from board (old and new)
+								2				remove callbacks from that moves */
+
 							document.addEventListener('click', function(){
 								var y = i;
 								var object = this;
@@ -106,6 +131,7 @@ var positions = {
 									} 
 								};
 							}.apply(this), false); 
+
 						}
 					}
 				}
@@ -567,7 +593,7 @@ var positions = {
 						return moves;
 					},
 					backlight_move: function(e){
-
+							console.log('EVENT', e, positions.move_status);
 							var j = Math.floor(r / 8);
 							var k = r % 8;
 							return function(){
@@ -623,15 +649,19 @@ var positions = {
 											});	
 										}
 									}
-									var all_moves_side = moves.tools.moves_intersection(undefined, [], this.data);
+									//debugger;
+									var all_moves_side = moves.tools.moves_intersection(undefined, [], this.data, undefined, undefined, 'true');
+									console.log('COMPARE', all_moves_side, to_delete);
 									for(var y in to_delete){
 										to_delete[y].forEach(function(d){
 											for(var u in all_moves_side){
-												for(var a = 0; all_moves_side[u].length > a; a++){
-													if(d[0] === all_moves_side[u][a][0] && d[1] === all_moves_side[u][a][1]){
-														console.log('true');
-														all_moves_side[u].splice(a, 1);
-														a--;
+												if(u === y){
+													for(var a = 0; all_moves_side[u].length > a; a++){
+														if(d[0] === all_moves_side[u][a][0] && d[1] === all_moves_side[u][a][1]){
+															console.log();
+															all_moves_side[u].splice(a, 1);
+															a--;
+														}
 													}
 												}
 											}
@@ -645,7 +675,7 @@ var positions = {
 									}
 
 									/// if checkmate
-
+									console.log('BUG', all_moves_side);
 									if(all_moves_side_length === 0 && this.check === this.current_side){
 										this.win = this.current_side === 'white' ? 'black' : 'white';
 										this.game_status = 'end';
@@ -654,7 +684,7 @@ var positions = {
 										this.execute_move(undefined, undefined, undefined, undefined, undefined, this)();
 									}
 									
-									/// if stalemate
+									// if stalemate
 
 									if(all_moves_side_length === 0 && this.check === ''){
 										this.win = 'stalemate';
@@ -734,6 +764,8 @@ var positions = {
 								}
 							}
 							// removing prohibited fields from moves array
+
+							// all opposite figures
 							if(h.match(reg1) && this.data[h][0] !== null && this.data[h][1] !== null){
 								var figure = h.split('_')[0];
 								var j = this.data[h][0];
@@ -793,6 +825,7 @@ var positions = {
 												var cell = king_nearist_cells[w];
 												if((cell[0] === j && cell[1] === k) || (king[0] === j && king[1] === k)){
 													
+													// if no figures on line from kings nearest cells to opposite figure
 													if(buf.length === 0){
 														moves_for_delete['king' + '_' + this.current_side].push([j, k]);
 														
@@ -804,9 +837,11 @@ var positions = {
 															moves_for_delete = fn(cells, this.data);
 														}
 													}
+													//if one figure
 													if(buf.length === 1){
 														if(buf[0].split('_')[1] === op_side){
 															king_nearist_cells.forEach(function(cell){
+																// if it is on kings nearest cell and under protection of queen or bishop or rook
 																if(cell[0] === this.data[buf[0]][0] && cell[1] === this.data[buf[0]][1]){
 																	moves_for_delete['king' + '_' + this.current_side].push(cell);
 																}
@@ -817,6 +852,7 @@ var positions = {
 															// if this figure protect the king from check
 
 															if(king[0] === j + l && king[1] === k + m){
+																// object(second parameter) can be a string if it is one figure instead of positions.data
 																moves_for_delete = fn(cells, buf[0]);
 															}
 														}
@@ -832,11 +868,20 @@ var positions = {
 					}.bind(object),
 
 					tools: {
-
+						/// moves_for_delete link to result object
+						/*move_for_delete can be all_move_side if we send 
+							empty arr, 
+							arguments[4] undefined or 'except_intersection',
+							arguments[5] !== undefined
+						in that case function returns all moves of chosen side(black or white)
+						without any restrictions from king immunity to death */ 
+						/// arr          	 cells from opposite figure to our king             
+						/// object      	 figures which moves should compare with arr
 						/// arguments[4]:
 						///             'intersection' - return intersection possible moves ///              		between object and arr;
 						///              'except_intersection' - return arr moves that does not 
 						///                     intersect other figures moves(for example,  ///                     returns all knight's moves to delete if the ///                     knight can't save the king from check)
+						/// reg               which side we should compare
 
 						moves_intersection: function(moves_for_delete, arr, object, reg){
 							
@@ -849,8 +894,9 @@ var positions = {
 								object[str] = 0;
 							}
 							for(var t in object){
+								var king = arguments[5] !== undefined ? true : !t.match(/^king/);
 
-								if(t.match(reg) && t.match(/^king/) === null && this.data[t][0] !== null){
+								if(t.match(reg) && king && this.data[t][0] !== null){
 									var f = t.split('_')[0];
 									f = f[f.length-1].match( /[0-9]/) != null ? f.substr(0, f.length-1) : f;
 									if(f.match(/pawn/) != null ){
@@ -911,11 +957,16 @@ var positions = {
 			positions.set_updates(updates); 
 			positions.render();
 			positions.subscribe();
+
+
+			///!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 			/// click on king and fast click to empty space to check if there are no moves at all if so, it should be checkmate or stalemate
 			/// i know it is crutch
 			var e = new Event('click'); 
 			document.querySelector('.king_' + positions.current_side).dispatchEvent(e);
-			document.body.dispatchEvent(e);
+			document.body.click();
+
+			//document.querySelector('.chat-container').dispatchEvent(e);
 		}
 		xhr.onerror = function(){
 			
@@ -925,6 +976,7 @@ var positions = {
 		xhr.send('');
 	},
 	set_game_status: function(){
+		//var chatBox = chatBox !== undefined ? chatBox : {};
 		var message = '';
 		switch(positions.game_status){
 			case 'end':
