@@ -131,6 +131,12 @@
 .red {
 	background: #f00;
 }
+.white-cell.green, .white-cell.red{
+	opacity: 0.8;
+}
+.black-cell.green, .black-cell.red{
+	opacity: 0.9;
+}
 .game-auth {
 	padding-top: 1px;
 	padding-bottom: 30px;

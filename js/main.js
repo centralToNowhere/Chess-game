@@ -649,7 +649,6 @@ var positions = {
 											});	
 										}
 									}
-									//debugger;
 									var all_moves_side = moves.tools.moves_intersection(undefined, [], this.data, undefined, undefined, 'true');
 									console.log('COMPARE', all_moves_side, to_delete);
 									for(var y in to_delete){
@@ -785,7 +784,7 @@ var positions = {
 											if(j + move[0] === king[0] && k + move[1] === king[1]){
 												this.check = this.current_side;
 												this.set_game_status();
-												moves_for_delete = fn([j, k], this.data, reg1);
+												moves_for_delete = fn([[j, k]], this.data, reg1);
 											}
 										}, object);
 									}, object);
@@ -799,7 +798,7 @@ var positions = {
 										if((j + temp[1][0] === king[0] && k + temp[1][1] === king[1]) || (j + temp[2][0] === king[0] && k + temp[2][1] === king[1])){
 											this.check = this.current_side;
 											this.set_game_status();
-											moves_for_delete = fn([j, k], this.data);
+											moves_for_delete = fn([[j, k]], this.data);
 										}
 									}, object);
 								}
