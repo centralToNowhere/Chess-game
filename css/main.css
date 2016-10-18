@@ -1,3 +1,8 @@
+input[data-textfield]:focus {
+	outline:none;
+	box-shadow: 0 0 20px 5px #7FFFD4;
+	border: 1px solid #CED0B6 !important;
+}
 .board {
 	display: block;
 	width: 480px;
@@ -5,6 +10,9 @@
 	margin: 0 auto;
 	margin-top: 75px;
 	margin-bottom: 30px;
+	border: 5px solid #999999;
+	box-sizing: content-box;
+	-moz-box-sizing: content-box;
 }
 .board__cell {
 	width: 12.5%;
@@ -160,12 +168,21 @@
 .textfield {
 	display: block;
 	width: 200px;
-	margin: 5px auto ;
-	line-height: 25px;
+	margin: 10px auto ;
+	line-height: 35px;
 	font-size: 1.5em;
 	text-align: center;
 	border-radius: 20px;
-	border: 0px;
+	-webkit-transition: box-shadow 0.5s ease-out;
+	-moz-transition: box-shadow 0.5s ease-out;
+	-o-transition: box-shadow 0.5s ease-out;
+	transition: box-shadow 0.5s ease-out;
+}
+.textfield[data-textfield]{
+	border: 1px solid #888;
+}
+.textfield[data-auth-submit]{
+	border: 2px solid #666;
 }
 .textfield:focus{
 	border-radius: 20px;
@@ -275,6 +292,7 @@ media
 	.board{
 		width:100%;
 		height: auto;
+		border: 0;
 	}
 	.chat-container{
 		margin-top: 30px;

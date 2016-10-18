@@ -784,7 +784,7 @@ var positions = {
 											if(j + move[0] === king[0] && k + move[1] === king[1]){
 												this.check = this.current_side;
 												this.set_game_status();
-												moves_for_delete = fn([[j, k]], this.data, reg1);
+												moves_for_delete = fn([[j, k]], this.data);
 											}
 										}, object);
 									}, object);
