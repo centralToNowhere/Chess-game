@@ -1,8 +1,13 @@
 input[data-textfield]:focus {
 	outline:none;
-	box-shadow: 0 0 20px 5px #7FFFD4;
-	border: 1px solid #CED0B6 !important;
+	box-shadow: 0 0 2vw 0.5vw #7FFFD4;
+	border: 0.2vw solid #CED0B6 !important;
 }
+
+input[data-check]:checked + label{
+	color:#EA9370;
+}	
+
 .board {
 	display: block;
 	width: 480px;
@@ -14,6 +19,7 @@ input[data-textfield]:focus {
 	box-sizing: content-box;
 	-moz-box-sizing: content-box;
 }
+
 .board__cell {
 	width: 12.5%;
 	height: 60px;
@@ -25,13 +31,15 @@ input[data-textfield]:focus {
 	-o-transition: background 0.5s ease-out;
 	transition: background 0.5s ease-out;
 }
+
 .block-notification {
-	width: 200px;
+	width: 20vw;
 	margin: auto;
-	padding-top: 15px;
+	padding-top: 1.5vw;
+	padding-bottom: 1.5vw;
 	color: #f00;
 	font-weight: 600;
-	font-size: 0.95em;
+	font-size: 1.2vw;
 	text-align: left;
 }
 
@@ -120,6 +128,7 @@ input[data-textfield]:focus {
 .chat-container{
 	float:left;
 	width:100%;
+	display: none;
 }
 
 
@@ -150,11 +159,11 @@ input[data-textfield]:focus {
 	padding-bottom: 30px;
 }
 .modal {
-	width: 500px;
+	width: 50vw;
 	margin: 100px auto 0 auto;
 	background: #CED0B6;
 	position: relative;
-	border-radius: 10px;
+	border-radius: 1vw;
 }
 .modal .game-title{
 	position: absolute;
@@ -167,28 +176,58 @@ input[data-textfield]:focus {
 }
 .textfield {
 	display: block;
-	width: 200px;
-	margin: 10px auto ;
-	line-height: 35px;
-	font-size: 1.5em;
+	width: 20vw;
+	margin: 1vw auto ;
+	line-height: 2;
+	font-size: 1.5vw;
 	text-align: center;
-	border-radius: 20px;
+	border-radius: 2vw;
 	-webkit-transition: box-shadow 0.5s ease-out;
 	-moz-transition: box-shadow 0.5s ease-out;
 	-o-transition: box-shadow 0.5s ease-out;
 	transition: box-shadow 0.5s ease-out;
 }
 .textfield[data-textfield]{
-	border: 1px solid #888;
+	border: 0.2vw solid #888;
 }
 .textfield[data-auth-submit]{
-	border: 2px solid #666;
+	border: 0.2vw solid #666;
 }
 .textfield:focus{
-	border-radius: 20px;
+	border-radius: 2vw;
 }
 .textfield:nth-of-type(1){
 	margin-top: 15px;
+}
+
+.check_mode{
+	padding-left: 0.5vw;
+	font-size: 1.2vw;
+	line-height: 2;
+	margin-top: -5px;
+	top: -4px;
+	position: relative;
+	-webkit-transition: color 0.1s ease-out;
+	-moz-transition: color 0.1s ease-out;
+	-o-transition: color 0.1s ease-out;
+	transition: color 0.1s ease-out;
+}
+.check_mode:hover{
+	color:#EA9370;
+}
+
+div[data-check-container]{
+	float: left;
+	width:9vw;
+	font-size: 1.5vw;
+	text-align: center;
+}
+.check_mode_block{
+	width: 18vw;
+	height: 3vw;
+	left: 50%;
+	margin-left: -9vw;
+	position: relative;
 }
 
 
@@ -281,9 +320,6 @@ media
 		width:398.66px;
 		margin-left:-398.66px;
 	}
-	.board-container{
-		padding-right:398.66px !important;
-	}
 }
 @media (min-width: 1200px) {
 
@@ -300,5 +336,10 @@ media
 	.modal{
 		width: 100%;
 		border-radius: 0;
+	}
+}
+@media (max-width: 992px){
+	.board-container{
+		padding-right: 15px !important;
 	}
 }

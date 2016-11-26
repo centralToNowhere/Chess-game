@@ -2,7 +2,7 @@ var http = require('http');
 var fs = require('fs');
 var url = require('url');
 var md5 = require('js-md5');
-var chokidar = require('graceful-chokidar');
+//var chessBot = require('./chessBot');
 const DATA = "/data.json";
 const querystring = require('querystring');
 
@@ -62,6 +62,7 @@ http.createServer(function(req, res) {
                 })
                 .on('end', function() {
                     try {
+                        console.log(data);
                         chat.publish(data);
                     } catch (e) {
                         res.statusCode = 400;
@@ -92,7 +93,6 @@ http.createServer(function(req, res) {
                 .on('end', function() {
                     try{
                         chess.publish(data);
-                        console.log('WUTWUTWUT   UWUT');
                     }catch(e) {
                         console.log(e);
                         res.statusCode = 400;
@@ -139,7 +139,6 @@ http.createServer(function(req, res) {
 scanActiveGame();
 
 function scanActiveGame(games_old){
-    console.log(games_old);
     if(games_old == undefined){
         games_old = {};
     }
@@ -152,20 +151,7 @@ function scanActiveGame(games_old){
             games = onReadable(games, readStream);
         })
         .on('end', function() {
-            // try{
-                console.log('END', games);
-                var parsed = JSON.parse(games);
-            // }catch(e){
-            //     console.log(e, 'data.json is empty. No active games found.');
-            //     var watcher = chokidar.watch(__dirname + DATA, {persistent: true});
-            //     watcher
-            //         .on('change', function(){
-            //             console.log('changed');
-            //             watcher.close();
-            //             scanActiveGame();
-            //         });
-            //     return;
-            // }
+            var parsed = JSON.parse(games);
             for(var name in parsed){
                 if(games_old[name]){
                     for(var j = 0;j < 8; j++){
@@ -174,13 +160,11 @@ function scanActiveGame(games_old){
                                 continue;
                             }else{
                                 j, k = 8;
-                                console.log('save');
                                 save.push(name);
                             }
                         }                
                     }
                 }else{
-                    console.log('push');
                     save.push(name);
                 }
             }
@@ -342,7 +326,6 @@ var chat = {
     subscribe: function(data, res){
         var sub = [data, res];
         this.clients.push(sub);
-        console.log('Chat clients', this.clients);
         res.on('close', function(){
             for(var i = 0; i < chat.clients.length; i++){
                 if(chat.clients[i][1] === this ){
@@ -365,7 +348,6 @@ var chat = {
             }else{
                 var client = JSON.parse(this.clients[i][0]);
                 /// chat messages
-                console.log(client.name, data.name);
                 if(client.name === data.name){
                     if(client.id === data.id){
                         to_send.whose = 'you';
@@ -373,7 +355,6 @@ var chat = {
                     if(client.id !== data.id){
                         to_send.whose = 'other';
                     }
-                    console.log('TO SEND', to_send);
                     this.clients[i][1].end(JSON.stringify(to_send));
                     this.clients.splice(i, 1);
                     i--;
@@ -388,7 +369,6 @@ var chess = {
     clients: [],
 
     persist_data: function(j, k, transform, l, m){
-        console.log('PERSIST');
         if(transform !== undefined){
             this.matrix[j][k] = transform;
             var regex = '^' + transform.split('_')[0] + '_' + transform.split('_')[1] + '_+\\d$';
@@ -413,14 +393,9 @@ var chess = {
                 if(this.data[h][0] === l && this.data[h][1] === m){
                     this.data[h] = [null, null];
                 }
-                console.log('1');
                 if(h.match(/.+_.+_\d+/)){
-                    console.log('2', this.data[h], j, k);
                     if(this.data[h][0] === j && this.data[h][1] === k){
-                        console.log('3');
-                        console.log('KEY', h);
                         this.data[h] = [l - 0, m - 0];
-                        console.log('DATA_AFTER_UPDATE', this.data[h], 'COORDINATES', l, m);
                         transformed_figure_found = true;
                         break;
                     }
@@ -433,7 +408,6 @@ var chess = {
     },
 
     delete_data: function(j, k){
-        console.log('DELETE');
         this.matrix[j][k] = null;
     },
 
@@ -519,15 +493,9 @@ var chess = {
                                                     }
                                                 }
 
-
-                                                // code for a pass delete 
-                                                // not yet
-                                                //
-
                                             }
 
 
-                                            //is_it_a_first_move update
 
 
                                             if(updates.is_it_a_first_move !== undefined){
@@ -576,13 +544,10 @@ var chess = {
                         current_move.black = parsed[updates.name][1].current_move;
 
                         // game_status update
-                        console.log('CHECKMATE\n\n\n\n\n\n');
                         if(updates.game_status !== undefined){
-                            console.log('STATUS_TRUE', updates.game_status);
                             parsed[updates.name].game_status = updates.game_status;
                         }
                         if(updates.win !== undefined){
-                            console.log('WIN_TRUE', updates.win);
                             parsed[updates.name].win = updates.win;
                         }
                         
@@ -593,15 +558,11 @@ var chess = {
                         updates.current_move = current_move;
                         delete updates.password;
                         delete updates.current_side;
-                        console.log('OLD', updates);
 
 
                         var to_update = JSON.stringify(updates);
-                        console.log('TO_STRING', to_update, chess.clients.length);
                         for(var i = 0; i < chess.clients.length; i++){
-                            console.log(chess.clients[i][0], updates.name);
                             if(chess.clients[i][0] === updates.name){
-                                console.log('UPDATE', to_update);
                                 chess.clients[i][1].end(to_update);
                                 chess.clients.splice(i, 1);
                                 i--;

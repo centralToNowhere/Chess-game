@@ -1,24 +1,38 @@
 var positions = {
-
-	set_updates: function(updates){	
+	call: 0,
+	set_updates: function(updates){
+		var updates_container = {};
+		updates_container.updates  = updates;
+		this.moves_stack.push(updates_container);
+		this.call++;
 		for(var t in updates){
 			if(t === 'game_status'){
-				console.log('UPDATES', updates[t], updates['win']);
+				updates_container.game_status = this.game_status;
+				updates_container.win = this.win;
+				//console.log(updates.current_move);
+				//console.log('UPDATES', updates[t], updates['win']);
 				positions.game_status = updates[t];
 				if(updates['win'] !== undefined){
 					positions.win = updates['win'];
 				}
 				//show game status somewhere
-				console.log(updates[t]);
+				//console.log(updates[t]);
 				this.set_game_status();
 			}
 			if(t !== 'deleted' && t !== 'current_move' && t !== 'current_side' && t !== 'name' && t !== 'password' && t !== 'is_it_a_first_move' && t !== 'game_status' && t !== 'win' && t !== 'check'){
 				if(typeof updates[t] !== 'string'){
+					// stores origin figure to undo later
+					updates_container.origin_figure = this.matrix[t.split('_')[0]][t.split('_')[1]];
+
 					this.matrix[updates[t][0]][updates[t][1]] = this.matrix[t.split('_')[0]][t.split('_')[1]];
 					
 					var transformed_figure_found = false;
 					for(var h in this.data){
-						if(this.data[h][0] === updates[t][0] && this.data[h][1] === updates[t][1]){
+						if(this.data[h][0] === updates[t][0] && this.data[h][1] === updates[t][1]){				
+
+							// stores wiped figure 
+							updates_container.cut = h;
+
 							this.data[h] = [null, null];
 						}
 						if(h.match(/.+_.+_\d+/)){
@@ -36,18 +50,24 @@ var positions = {
 					this.matrix[t.split('_')[0]][t.split('_')[1]] = updates[t];
 					var regex = '^' + updates[t].split('_')[0] + '_' + updates[t].split('_')[1] + '_+\\d$';
 					var regex = new RegExp(regex);
-					
 					for(var i in this.data){
 		                if(i.match(regex)){
 		                    var num = i.split('_')[2] - 0; // to number
 		                    var color = i.split('_')[1];
 		                    this.data[updates[t].split('_')[0] + '_' + color + '_' + ++num] = [t.split('_')[0] - 0, t.split('_')[1] - 0];
+		                    // store transform figure to delete it if undo
+		                    updates_container.transform = updates[t].split('_')[0] + '_' + color + '_' + ++num;
 		                }else{
 		                	this.data[updates[t] + '_1'] = [t.split('_')[0] - 0, t.split('_')[1] - 0];
+		                	updates_container.transform = updates[t] + '_1';
 		                }
 		            }
 				}
 			}
+		}
+		if(this.AI === false && this.game_mode === 'single'){
+			updates_container.side = this.current_side;
+			this.current_side = updates.current_side;
 		}
 		if(updates.deleted !== undefined){
 			for(var l = 0; l < updates.deleted.length; l++){
@@ -55,14 +75,19 @@ var positions = {
 			}
 		}
 		if(updates.is_it_a_first_move !== undefined){
+			updates_container.is_it_a_first_move = this.is_it_a_first_move;
 			this.is_it_a_first_move = updates.is_it_a_first_move;
 		}
 		if(updates.current_move !== undefined){
+			updates_container.current_move = this.current_move;
+			/// always true in game with AI
 			this.current_move = updates.current_move[this.current_side];
 		}
 		if(updates.check !== undefined){
+			updates_container.check = this.check;
 			this.check = updates.check;
 		}
+
 	},
 	// add css classes to DOM elements from matrix object 
 	render: function(pos_cells, flag){
@@ -96,7 +121,7 @@ var positions = {
 							this.board_cells[i].className += " " + 'green';
 							this.move_status = 'selection';
 
-							/* function get_possible_moves set callbacks on each
+							/* function set_possible_moves set callbacks on each
 								board cell. Callback calculates possible moves for current figure, set another callbacks for obtained cells and return cells as array in render function to set css class on it. Then we are waiting for second click on green or red fields to execute move. In render function also we need to set callback on document in case of we want to change figure. Click on document should remove green and red fields of previous chosen figure. 
 								There we have two types of callback:
 									click on board__cell is to:
@@ -350,21 +375,25 @@ var positions = {
 				},
 	execute_move: function(start_j, start_k, finish_j, finish_k, embeded_move, object){
 
-					//store callbacks to remove it later
-					if(finish_j !== undefined && finish_k !== undefined){
-						object.callbacks.push([callback, finish_j*8 + finish_k]);
+					if(object.AI === false){
+						//store callbacks to remove it later
+						if(finish_j !== undefined && finish_k !== undefined){
+							object.callbacks.push([callback, finish_j*8 + finish_k]);
+						}
 					}
 
 
 
 					function callback(e){
-
 						var updates = {
 							deleted: [],
 						};
+						var deleted_figure_name = '';
 						if(start_j !== undefined && start_k !== undefined && finish_k !== undefined && finish_j !== undefined){
-							for(var i = 0; i < object.callbacks.length; i++){
-								object.board_cells[object.callbacks[i][1]].removeEventListener('click', object.callbacks[i][0], false);
+							if(object.AI === false){
+								for(var i = 0; i < object.callbacks.length; i++){
+									object.board_cells[object.callbacks[i][1]].removeEventListener('click', object.callbacks[i][0], false);
+								}
 							}
 
 							//castling
@@ -386,6 +415,7 @@ var positions = {
 							// }
 							if(finish_j !== start_j || finish_k !== start_k){
 								updates.deleted.push([start_j, start_k]);
+								deleted_figure_name = object.matrix[start_j][start_k];
 							}
 						//	object.matrix[finish_j][finish_k] = object.matrix[start_j][start_k];
 							updates[start_j + '_' + start_k] = [finish_j, finish_k];
@@ -411,26 +441,51 @@ var positions = {
 								}
 							}
 						}
-						updates.current_side = object.current_side;
 						updates.is_it_a_first_move = object.is_it_a_first_move;
 						updates.name = object.name;
 						updates.password = object.password;
-						updates.current_move = object.current_move;
+						if(object.game_mode === 'single'){
+							var s = object.current_side === 'white' ? [false, true] : [true, false];
+							updates.current_move = {
+								'white': s[0],
+								'black': s[1] 
+							};
+							updates.current_side = object.current_side === 'white' ? 'black' : 'white';
+						}else{
+							updates.current_move = object.current_move;
+							updates.current_side = object.current_side;
+						}
 						updates.win = object.win;
 						updates.game_status = object.game_status;						
 						
+						if(object.game_mode !== 'single'){
+							// send position object to server
+							object.publish(updates);
+						}else{
+							// if single player 
+							object.set_updates(updates);
+							if(object.AI === false){
+								// ai operates (build a tree) with copy of same object data as user,
+								// so we should block all DOM operations when ai searching move
+								object.render();
+								debugger;
+								///??????no logic
+								if(object.ai_side === object.current_side){
+									setTimeout((function(){
+										return object.tools().ai_move;
+									})(), 500);
+								}
+							}
+						}
 
-						// send position object to server
-						object.publish(updates);
-						console.log('STATUS SEND', updates);
+						//console.log('STATUS SEND', updates);
 						// render board
 						// object.render();
-
 					}
 
 
 					return callback;
-				},
+	},
 
 	set_possible_moves: function(){
 		for(var i = 0;i < this.board_cells.length; i++){
@@ -439,161 +494,8 @@ var positions = {
 				var r = i;
 				var moves = {
 
-					king: function(){
-
-						// moves 
-						// [[ possible directions from figure position]][distance]
-						// distance possible values: 
-						// 1 - one cell from current position
-						// 0 - INFINITY cells from current position
-						// -1 - Discrete cells (vectors turns to array of possible cells to move)
-						// 2 - pawn
-						// d - documentation
-
-						var moves = {
-
-							vectors: [
-
-								[1, 0],
-								[1, -1],
-								[1, 1],
-								[0, 1],
-								[0, -1],
-								[-1, 0],
-								[-1, 1],
-								[-1, -1]
-
-							],
-
-							distance: 1,
-
-							spec: function(){
-
-							}
-						};
-
-						return moves;
-					},
-
-					queen: function(){
-
-						var moves = {
-
-							vectors: [
-
-								[1, 0],
-								[1, -1],
-								[1, 1],
-								[0, 1],
-								[0, -1],
-								[-1, 0],
-								[-1, 1],
-								[-1, -1]
-
-							],
-
-							distance: 0
-						};
-
-						return moves;
-					},
-					bishop: function(){
-
-						var moves = {
-
-							vectors: [
-
-								[1, -1],
-								[1, 1],
-								[-1, 1],
-								[-1, -1]
-
-							],
-
-							distance: 0
-						};
-
-						return moves;
-					},
-					rook: function(){
-
-						var moves = {
-
-							vectors: [
-
-								[1, 0],
-								[0, 1],
-								[0, -1],
-								[-1, 0],
-
-							],
-
-							distance: 0
-						};
-
-						return moves;
-					},
-					knight: function(){
-
-						var moves = {
-
-							vectors: [
-
-								[2, -1],
-								[2, 1],
-								[-2, -1],
-								[-2, 1],
-								[1, 2],
-								[-1, 2],
-								[-1, -2],
-								[1, -2]
-
-							],
-
-							distance: -1
-						};
-
-						return moves;
-					},
-					pawn_black: function(){
-
-						var moves = {
-
-							vectors: [
-
-								[1, 0],
-					         [1, 1],
-					         [1, -1],
-					         [2, 0]
-
-
-							],
-
-							distance: 2
-						};
-
-						return moves;
-					},		
-					pawn_white: function(){
-
-						var moves = {
-
-							vectors: [
-
-								[-1, 0],
-								[-1, 1],
-								[-1, -1],
-								[-2, 0]
-
-							],
-
-							distance: 2
-						};
-
-						return moves;
-					},
 					backlight_move: function(e){
-							console.log('EVENT', e, positions.move_status);
+							//console.log('EVENT', e, positions.move_status);
 							var j = Math.floor(r / 8);
 							var k = r % 8;
 							return function(){
@@ -616,15 +518,15 @@ var positions = {
 									}
 
 									// calculate moves
-									var res = this.get_moves(moves[figure](), j, k, object);
+									var res = this.get_moves(this.moves[figure](), j, k, object);
 
 									//set callbacks on each of the possible cells for move
 									var arr = res.possible_cells.concat(res.possible_attacks);
 
 									//scan check or stalemate
 									//delete moves from arr to prevent king's vanishing
-									var to_delete = moves.scanCheckmate();
-									console.log(to_delete);
+									var to_delete = this.tools().scanCheckmate();
+									//console.log(to_delete);
 									for(var y in to_delete){
 										if(y === data_figure){
 											to_delete[y].forEach(function(deleted){
@@ -649,15 +551,14 @@ var positions = {
 											});	
 										}
 									}
-									var all_moves_side = moves.tools.moves_intersection(undefined, [], this.data, undefined, undefined, 'true');
-									console.log('COMPARE', all_moves_side, to_delete);
+									var all_moves_side = this.tools().moves_intersection(undefined, [], this.data, undefined, undefined, 'true');
+									//console.log('COMPARE', all_moves_side, to_delete);
 									for(var y in to_delete){
 										to_delete[y].forEach(function(d){
 											for(var u in all_moves_side){
 												if(u === y){
 													for(var a = 0; all_moves_side[u].length > a; a++){
 														if(d[0] === all_moves_side[u][a][0] && d[1] === all_moves_side[u][a][1]){
-															console.log();
 															all_moves_side[u].splice(a, 1);
 															a--;
 														}
@@ -666,6 +567,7 @@ var positions = {
 											}
 										});
 									}
+
 									var all_moves_side_length = 0;
 									for(var u in all_moves_side){
 										for(var a = 0; all_moves_side[u].length > a; a++){
@@ -674,7 +576,7 @@ var positions = {
 									}
 
 									/// if checkmate
-									console.log('BUG', all_moves_side);
+									//console.log('BUG', all_moves_side);
 									if(all_moves_side_length === 0 && this.check === this.current_side){
 										this.win = this.current_side === 'white' ? 'black' : 'white';
 										this.game_status = 'end';
@@ -707,247 +609,301 @@ var positions = {
 
 							}.apply(object, arguments);
 						},
-					
-					//delete moves from arr to prevent king's vanishing
 
-					scanCheckmate: function(){
-						var op_side = this.current_side === 'black' ? 'white' : 'black';
-						var side = this.current_side;
-						var reg1 = new RegExp('.+_' + op_side);
-						var reg2 = new RegExp('.+_' + side);
-						var moves_for_delete = {};
-						moves_for_delete['king' + '_' + this.current_side] = [];
-						Function.prototype.curry = function(){
-						    var fn = this, args = Array.prototype.slice.call(arguments);
-						    return function(){
-						        return fn.apply(this, args.concat(Array.prototype.slice.call(arguments)));
-						    };
-						}
-						var fn = moves.tools.moves_intersection.curry(moves_for_delete);		
-						var king = this.data['king_' + this.current_side];
-						var king_nearist_cells = [[king[0] + 1, king[1] + 1],
-												[king[0] - 1, king[1] - 1],
-												[king[0] + 1, king[1]],
-												[king[0] - 1, king[1]],
-												[king[0], king[1] + 1],
-												[king[0], king[1] - 1],
-												[king[0] + 1, king[1] - 1],
-												[king[0] - 1, king[1] + 1]];
-
-						for(var h in this.data){
-							/// possibility of castling
-							if(h === 'king_' + side){
-								if(this.is_it_a_first_move[h] === true){
-									if(side === 'white'){
-										var cells = [[7, 2], [7, 3], [7, 4], [7, 5], [7, 6]];
-									}
-									if(side === 'black'){
-										var cells = [[0, 2], [0, 3], [0, 4], [0, 5], [0, 6]];
-									}
-									var rt = fn(cells, this.data, reg1, 'intersection');
-									
-									if(rt.length !== 0){
-										for(var z = 0;z < rt.length;z++){
-											if(rt[z][1] === 2 || rt[z][1] === 3 || rt[z][1] === 4){
-												moves_for_delete['king_' + side].push([rt[z][0], 2]);
-											}
-											if(rt[z][1] === 5 || rt[z][1] === 6){
-												moves_for_delete['king_' + side].push([rt[z][0], 6]);
-											}
-											if(rt[z][1] === 4){
-												moves_for_delete['king_' + side].push([rt[z][0], 2]);
-												moves_for_delete['king_' + side].push([rt[z][0], 6]);
-											}
-										}
-									}
-								}
-							}
-							// removing prohibited fields from moves array
-
-							// all opposite figures
-							if(h.match(reg1) && this.data[h][0] !== null && this.data[h][1] !== null){
-								var figure = h.split('_')[0];
-								var j = this.data[h][0];
-								var k = this.data[h][1];
-								figure = figure[figure.length-1].match( /[0-9]/) != null ? figure.substr(0, figure.length-1) : figure;
-								if(figure.match(/pawn/) != null ){
-									figure = figure + '_' + h.split('_')[1];
-								}
-								var temp = moves[figure]().vectors;
-								if(figure === 'knight' || figure === 'king'){
-									temp.forEach(function(move){
-										king_nearist_cells.forEach(function(cell){
-											if(j + move[0] === cell[0] && k + move[1] === cell[1]){
-												moves_for_delete['king' + '_' + this.current_side].push(cell);
-											}
-											/// if check by knight
-											if(j + move[0] === king[0] && k + move[1] === king[1]){
-												this.check = this.current_side;
-												this.set_game_status();
-												moves_for_delete = fn([[j, k]], this.data);
-											}
-										}, object);
-									}, object);
-								}
-								if(figure.match(/pawn/)){
-									king_nearist_cells.forEach(function(cell){
-										if((j + temp[1][0] === cell[0] && k + temp[1][1] === cell[1]) || (j + temp[2][0] === cell[0] && k + temp[2][1] === cell[1])){
-											moves_for_delete['king' + '_' + this.current_side].push(cell);
-										}
-										///if check by pawn
-										if((j + temp[1][0] === king[0] && k + temp[1][1] === king[1]) || (j + temp[2][0] === king[0] && k + temp[2][1] === king[1])){
-											this.check = this.current_side;
-											this.set_game_status();
-											moves_for_delete = fn([[j, k]], this.data);
-										}
-									}, object);
-								}
-								if(figure === 'bishop' || figure === 'rook' || figure === 'queen'){
-									
-									for(var z = 0; z < temp.length; z++){
-										var move = temp[z];
-										var cells = [];
-										var buf = [];
-										for(var l = move[0], m = move[1], j = this.data[h][0] + l, k = this.data[h][1] + m; j < 8 && k < 8 && j >= 0 && k >= 0; j = j + l, k = k + m){
-											
-											if(cells.length === 0 ){
-												cells.push([j - l, k - m]);
-											}
-											cells.push([j, k]);
-											if((this.matrix[j][k] + '').match(reg1) || (this.matrix[j][k] + '').match(reg2)){
-												if(this.matrix[j][k] !== 'king_' + side){
-													buf.push(this.matrix[j][k]);
-												}
-											}
-
-											for(var w = 0; w < king_nearist_cells.length; w++){
-												var cell = king_nearist_cells[w];
-												if((cell[0] === j && cell[1] === k) || (king[0] === j && king[1] === k)){
-													
-													// if no figures on line from kings nearest cells to opposite figure
-													if(buf.length === 0){
-														moves_for_delete['king' + '_' + this.current_side].push([j, k]);
-														
-
-														/// if check
-														if((king[0] === j + l && king[1] === k + m) || (king[0] === j  && king[1] === k)){
-															this.check = this.current_side;
-															this.set_game_status();
-															moves_for_delete = fn(cells, this.data);
-														}
-													}
-													//if one figure
-													if(buf.length === 1){
-														if(buf[0].split('_')[1] === op_side){
-															king_nearist_cells.forEach(function(cell){
-																// if it is on kings nearest cell and under protection of queen or bishop or rook
-																if(cell[0] === this.data[buf[0]][0] && cell[1] === this.data[buf[0]][1]){
-																	moves_for_delete['king' + '_' + this.current_side].push(cell);
-																}
-															}, object);
-														}
-														if(buf[0].split('_')[1] === side){
-
-															// if this figure protect the king from check
-
-															if(king[0] === j + l && king[1] === k + m){
-																// object(second parameter) can be a string if it is one figure instead of positions.data
-																moves_for_delete = fn(cells, buf[0]);
-															}
-														}
-													}
-												}	
-											}
-										}
-									}
-								}
-							}
-						}
-						return moves_for_delete;
-					}.bind(object),
-
-					tools: {
-						/// moves_for_delete link to result object
-						/*move_for_delete can be all_move_side if we send 
-							empty arr, 
-							arguments[4] undefined or 'except_intersection',
-							arguments[5] !== undefined
-						in that case function returns all moves of chosen side(black or white)
-						without any restrictions from king immunity to death */ 
-						/// arr          	 cells from opposite figure to our king             
-						/// object      	 figures which moves should compare with arr
-						/// arguments[4]:
-						///             'intersection' - return intersection possible moves ///              		between object and arr;
-						///              'except_intersection' - return arr moves that does not 
-						///                     intersect other figures moves(for example,  ///                     returns all knight's moves to delete if the ///                     knight can't save the king from check)
-						/// reg               which side we should compare
-
-						moves_intersection: function(moves_for_delete, arr, object, reg){
-							
-							moves_for_delete = arguments[0] === undefined ? [] : arguments[0];
-								var intersection = [];
-							reg = arguments[3] === undefined ? new RegExp('.+_' + this.current_side): arguments[3];
-							if(typeof object === 'string'){
-								var str = object;
-								object = {};
-								object[str] = 0;
-							}
-							for(var t in object){
-								var king = arguments[5] !== undefined ? true : !t.match(/^king/);
-
-								if(t.match(reg) && king && this.data[t][0] !== null){
-									var f = t.split('_')[0];
-									f = f[f.length-1].match( /[0-9]/) != null ? f.substr(0, f.length-1) : f;
-									if(f.match(/pawn/) != null ){
-										f = f + '_' + t.split('_')[1];
-									}
-									var all_moves = this.get_moves(moves[f](), this.data[t][0], this.data[t][1], this, t.split('_')[1]);
-									all_moves = all_moves.possible_cells.concat(all_moves.possible_attacks);
-									var trig = 0;
-									for(var b = 0; b < all_moves.length; b++){
-										for(var c = 0; c < arr.length; c++){
-											trig = 0;
-											if(arr[c][0] === all_moves[b][0] && arr[c][1] === all_moves[b][1]){
-												trig = 1;
-												
-												intersection.push(all_moves[b]);
-												break;
-											}
-										}
-										if(trig === 0 && (arguments[4] === 'except_inersection' || arguments[4] === undefined)){
-											if(moves_for_delete[t]){
-												moves_for_delete[t].push(all_moves[b]);
-											}else{
-												moves_for_delete[t] = [];
-												moves_for_delete[t].push(all_moves[b]);
-											}
-										}
-									}
-								}
-							}
-							if(arguments[4] === 'except_inersection' || arguments[4] === undefined){
-								return moves_for_delete;
-							}else{
-								if(arguments[4] === 'intersection'){
-									return intersection;
-								}
-								return {};
-							}
-
-						}.bind(object),
-					}
 				}
 				return moves.backlight_move;
 
 			}()), false);
 		}
 	},
+	tools: function(){
+		var object = this;
+		var tools = {
+			/// moves_for_delete link to result object
+			/*move_for_delete can be all_move_side if we send 
+				1. empty arr, 
+				2. arguments[4] undefined or 'except_intersection',
+				3. arguments[5] !== undefined
+			in that case function returns all moves of chosen side(black or white)
+			without any restrictions from king immunity to death */ 
+			/// arr          	 cells from opposite figure to our king             
+			/// object      	 figures which moves should compare with arr
+			/// arguments[4]:
+			///             'intersection' - return intersection possible moves ///              		between object and arr;
+			///              'except_intersection' - return arr moves that does not 
+			///                     intersect other figures moves(for example,  ///                     returns all knight's moves to delete if the ///                     knight can't save the king from check)
+			/// reg               which side we should compare
+
+			moves_intersection: function(moves_for_delete, arr, object, reg){
+
+				moves_for_delete = arguments[0] === undefined ? [] : arguments[0];
+					var intersection = [];
+				reg = arguments[3] === undefined ? new RegExp('.+_' + this.current_side): arguments[3];
+				if(typeof object === 'string'){
+					var str = object;
+					object = {};
+					object[str] = 0;
+				}
+				for(var t in object){
+					var king = arguments[5] !== undefined ? true : !t.match(/^king/);
+
+					if(t.match(reg) && king && this.data[t][0] !== null){
+						var f = t.split('_')[0];
+						f = f[f.length-1].match( /[0-9]/) != null ? f.substr(0, f.length-1) : f;
+						if(f.match(/pawn/) != null ){
+							f = f + '_' + t.split('_')[1];
+						}
+						var all_moves = this.get_moves(this.moves[f](), this.data[t][0], this.data[t][1], this, t.split('_')[1]);
+						all_moves = all_moves.possible_cells.concat(all_moves.possible_attacks);
+						var trig = 0;
+						for(var b = 0; b < all_moves.length; b++){
+							for(var c = 0; c < arr.length; c++){
+								trig = 0;
+								if(arr[c][0] === all_moves[b][0] && arr[c][1] === all_moves[b][1]){
+									trig = 1;
+									
+									intersection.push(all_moves[b]);
+									break;
+								}
+							}
+							if(trig === 0 && (arguments[4] === 'except_inersection' || arguments[4] === undefined)){
+								if(moves_for_delete[t]){
+									moves_for_delete[t].push(all_moves[b]);
+								}else{
+									moves_for_delete[t] = [];
+									moves_for_delete[t].push(all_moves[b]);
+								}
+							}
+						}
+					}
+				}
+				if(arguments[4] === 'except_inersection' || arguments[4] === undefined){
+					return moves_for_delete;
+				}else{
+					if(arguments[4] === 'intersection'){
+						return intersection;
+					}
+					return {};
+				}
+
+			}.bind(object),
+
+			//delete moves from arr to prevent king's vanishing
+			scanCheckmate: function(){
+				var op_side = this.current_side === 'black' ? 'white' : 'black';
+				var side = this.current_side;
+				var reg1 = new RegExp('.+_' + op_side);
+				var reg2 = new RegExp('.+_' + side);
+				var moves_for_delete = {};
+				moves_for_delete['king' + '_' + this.current_side] = [];
+				Function.prototype.curry = function(){
+				    var fn = this, args = Array.prototype.slice.call(arguments);
+				    return function(){
+				        return fn.apply(this, args.concat(Array.prototype.slice.call(arguments)));
+				    };
+				}
+				var fn = this.tools().moves_intersection.curry(moves_for_delete);		
+				var king = this.data['king_' + this.current_side];
+				var king_nearist_cells = [[king[0] + 1, king[1] + 1],
+										[king[0] - 1, king[1] - 1],
+										[king[0] + 1, king[1]],
+										[king[0] - 1, king[1]],
+										[king[0], king[1] + 1],
+										[king[0], king[1] - 1],
+										[king[0] + 1, king[1] - 1],
+										[king[0] - 1, king[1] + 1]];
+
+				for(var h in this.data){
+					/// possibility of castling
+					if(h === 'king_' + side){
+						if(this.is_it_a_first_move[h] === true){
+							if(side === 'white'){
+								var cells = [[7, 2], [7, 3], [7, 4], [7, 5], [7, 6]];
+							}
+							if(side === 'black'){
+								var cells = [[0, 2], [0, 3], [0, 4], [0, 5], [0, 6]];
+							}
+							var rt = fn(cells, this.data, reg1, 'intersection');
+							
+							if(rt.length !== 0){
+								for(var z = 0;z < rt.length;z++){
+									if(rt[z][1] === 2 || rt[z][1] === 3 || rt[z][1] === 4){
+										moves_for_delete['king_' + side].push([rt[z][0], 2]);
+									}
+									if(rt[z][1] === 5 || rt[z][1] === 6){
+										moves_for_delete['king_' + side].push([rt[z][0], 6]);
+									}
+									if(rt[z][1] === 4){
+										moves_for_delete['king_' + side].push([rt[z][0], 2]);
+										moves_for_delete['king_' + side].push([rt[z][0], 6]);
+									}
+								}
+							}
+						}
+					}
+					// removing prohibited fields from moves array
+
+					// all opposite figures
+					if(h.match(reg1) && this.data[h][0] !== null && this.data[h][1] !== null){
+						var figure = h.split('_')[0];
+						var j = this.data[h][0];
+						var k = this.data[h][1];
+						figure = figure[figure.length-1].match( /[0-9]/) != null ? figure.substr(0, figure.length-1) : figure;
+						if(figure.match(/pawn/) != null ){
+							figure = figure + '_' + h.split('_')[1];
+						}
+						var temp = this.moves[figure]().vectors;
+						if(figure === 'knight' || figure === 'king'){
+							temp.forEach(function(move){
+								king_nearist_cells.forEach(function(cell){
+									if(j + move[0] === cell[0] && k + move[1] === cell[1]){
+										moves_for_delete['king' + '_' + this.current_side].push(cell);
+									}
+									/// if check by knight
+									if(j + move[0] === king[0] && k + move[1] === king[1]){
+										this.check = this.current_side;
+										this.set_game_status();
+										moves_for_delete = fn([[j, k]], this.data);
+									}
+								}, object);
+							}, object);
+						}
+						if(figure.match(/pawn/)){
+							king_nearist_cells.forEach(function(cell){
+								if((j + temp[1][0] === cell[0] && k + temp[1][1] === cell[1]) || (j + temp[2][0] === cell[0] && k + temp[2][1] === cell[1])){
+									moves_for_delete['king' + '_' + this.current_side].push(cell);
+								}
+								///if check by pawn
+								if((j + temp[1][0] === king[0] && k + temp[1][1] === king[1]) || (j + temp[2][0] === king[0] && k + temp[2][1] === king[1])){
+									this.check = this.current_side;
+									this.set_game_status();
+									moves_for_delete = fn([[j, k]], this.data);
+								}
+							}, object);
+						}
+						if(figure === 'bishop' || figure === 'rook' || figure === 'queen'){
+							
+							for(var z = 0; z < temp.length; z++){
+								var move = temp[z];
+								var cells = [];
+								var buf = [];
+								for(var l = move[0], m = move[1], j = this.data[h][0] + l, k = this.data[h][1] + m; j < 8 && k < 8 && j >= 0 && k >= 0; j = j + l, k = k + m){
+									
+									if(cells.length === 0 ){
+										cells.push([j - l, k - m]);
+									}
+									cells.push([j, k]);
+									if((this.matrix[j][k] + '').match(reg1) || (this.matrix[j][k] + '').match(reg2)){
+										if(this.matrix[j][k] !== 'king_' + side){
+											buf.push(this.matrix[j][k]);
+										}
+									}
+
+									for(var w = 0; w < king_nearist_cells.length; w++){
+										var cell = king_nearist_cells[w];
+										if((cell[0] === j && cell[1] === k) || (king[0] === j && king[1] === k)){
+											
+											// if no figures on line from kings nearest cells to opposite figure
+											if(buf.length === 0){
+												moves_for_delete['king' + '_' + this.current_side].push([j, k]);
+												
+
+												/// if check
+												if((king[0] === j + l && king[1] === k + m) || (king[0] === j  && king[1] === k)){
+													this.check = this.current_side;
+													this.set_game_status();
+													moves_for_delete = fn(cells, this.data);
+												}
+											}
+											//if one figure
+											if(buf.length === 1){
+												if(buf[0].split('_')[1] === op_side){
+													king_nearist_cells.forEach(function(cell){
+														// if it is on kings nearest cell and under protection of queen or bishop or rook
+														if(cell[0] === this.data[buf[0]][0] && cell[1] === this.data[buf[0]][1]){
+															moves_for_delete['king' + '_' + this.current_side].push(cell);
+														}
+													}, object);
+												}
+												if(buf[0].split('_')[1] === side){
+
+													// if this figure protect the king from check
+
+													if(king[0] === j + l && king[1] === k + m){
+														// object(second parameter) can be a string if it is one figure instead of positions.data
+														moves_for_delete = fn(cells, buf[0]);
+													}
+												}
+											}
+										}	
+									}
+								}
+							}
+						}
+					}
+				}
+				return moves_for_delete;
+			}.bind(object),
+
+			undo:function(){
+				var last_update = this.moves_stack.pop();
+				for(var t in last_update.updates){
+					if(t === 'game_status'){
+						if(last_update.game_status !== undefined){
+							this.game_status = last_update.game_status; 
+						}
+						if(last_update.win !== undefined){
+							this.win = last_update.win;
+						}
+					}
+					if(t !== 'deleted' && t !== 'current_move' && t !== 'current_side' && t !== 'name' && t !== 'password' && t !== 'is_it_a_first_move' && t !== 'game_status' && t !== 'win' && t !== 'check'){
+						if(typeof last_update.updates[t] !== 'string'){
+							// stores origin figure to undo later
+							this.matrix[t.split('_')[0]][t.split('_')[1]] = last_update.origin_figure;
+							this.data[last_update.origin_figure] = [t.split('_')[0] - 0, t.split('_')[1] - 0];
+							if(last_update.cut !== undefined){
+								this.matrix[last_update.updates[t][0]][last_update.updates[t][1]] = last_update.cut;
+								this.data[last_update.cut] = [last_update.updates[t][0] - 0, last_update.updates[t][1] - 0];
+							}else{
+								this.matrix[last_update.updates[t][0]][last_update.updates[t][1]] = null;
+							}
+						}else{
+							if(last_update.transfrom !== undefined){
+								delete this.data[last_update.transform];
+							}
+						}
+					}
+				}
+				if(last_update.side !== undefined){
+					this.current_side = last_update.side;				
+				}
+				if(last_update.is_it_a_first_move !== undefined){
+					this.is_it_a_first_move = last_update.is_it_a_first_move;
+				}
+				if(last_update.current_move !== undefined){
+					this.current_move = last_update.current_move;
+				}
+				if(last_update.check !== undefined){
+					this.check = last_update.check;
+				}
+			}.bind(object),
+		    ai_move: function(){
+		    	var event = new Event("AI_turn", {
+					cancelable: true,
+				});
+				document.body.dispatchEvent(event);
+		    },
+		}
+		return tools;
+	},
+
 	publish: function(updates){
 		var xhr = new XMLHttpRequest();
     	xhr.open("POST", "/publish", true);
   		xhr.send(JSON.stringify(updates));
   		return;
 	},
+
 	subscribe: function(){
 		var xhr = new XMLHttpRequest();
 		xhr.open("GET", "/subscribe?name=" + this.name + "&rand=" + Math.random().toString().split('.')[1], true);
@@ -989,11 +945,55 @@ var positions = {
 				break;
 		}
 	},
+
+	/*
+	side - string (black/white)
+
+	returns 3n array moves of current side
+	[[[2, 1], [3, 1]],[...]]
+		where [2, 1] - start cell, [3, 1] - target cell
+	*/
+	all_moves_side: function(side){
+
+		var reg_side = new RegExp('.+_' + side);
+
+		var to_delete = this.tools().scanCheckmate();
+
+		var all_moves_side = this.tools().moves_intersection(undefined, [], this.data, reg_side, undefined, 'true');
+
+		for(var y in to_delete){
+			to_delete[y].forEach(function(d){
+				for(var u in all_moves_side){
+					if(u === y){
+						for(var a = 0; all_moves_side[u].length > a; a++){
+							if(d[0] === all_moves_side[u][a][0] && d[1] === all_moves_side[u][a][1]){
+								all_moves_side[u].splice(a, 1);
+								a--;
+							}
+						}
+					}
+				}
+			});
+		}
+
+		var all_moves_side_3n_arr = [];
+		for(var y in all_moves_side){
+			for(var a = 0; all_moves_side[y].length > a; a++){
+				all_moves_side_3n_arr.push([this.data[y], all_moves_side[y][a]]);
+			}
+		}
+
+		return all_moves_side_3n_arr;
+	},
+
+
 	board_cells: (function(){
 
 		return document.querySelectorAll('.board__cell');
 
 	})(),
+
+
     data:{
 
 		king_black: [0, 4],
@@ -1047,8 +1047,8 @@ var positions = {
     'pawn6_black',
     'pawn7_black',
     'pawn8_black' ],
-  [ null, null, null, null, null, null, 'pawn4_white', null ],
-  [ null, 'queen_white', null, null, null, 'queen_white', null, null ],
+  [ null, null, null, null, null, null, null, null ],
+  [ null, null, null, null, null, null, null, null ],
   [ null, null, null, null, null, null, null, null ],
   [ null, null, null, null, null, null, null, null ],
   [ 'pawn1_white',
@@ -1067,6 +1067,161 @@ var positions = {
     'bishop2_white',
     'knight2_white',
     'rook2_white' ] ],
+    moves:{
+    	king: function(){
+
+    		// moves 
+    		// [[ possible directions from figure position]][distance]
+    		// distance possible values: 
+    		// 1 - one cell from current position
+    		// 0 - INFINITY cells from current position
+    		// -1 - Discrete cells (vectors turns to array of possible cells to move)
+    		// 2 - pawn
+    		// d - documentation
+
+    		var moves = {
+
+    			vectors: [
+
+    				[1, 0],
+    				[1, -1],
+    				[1, 1],
+    				[0, 1],
+    				[0, -1],
+    				[-1, 0],
+    				[-1, 1],
+    				[-1, -1]
+
+    			],
+
+    			distance: 1,
+
+    			spec: function(){
+
+    			}
+    		};
+
+    		return moves;
+    	},
+
+    	queen: function(){
+
+    		var moves = {
+
+    			vectors: [
+
+    				[1, 0],
+    				[1, -1],
+    				[1, 1],
+    				[0, 1],
+    				[0, -1],
+    				[-1, 0],
+    				[-1, 1],
+    				[-1, -1]
+
+    			],
+
+    			distance: 0
+    		};
+
+    		return moves;
+    	},
+    	bishop: function(){
+
+    		var moves = {
+
+    			vectors: [
+
+    				[1, -1],
+    				[1, 1],
+    				[-1, 1],
+    				[-1, -1]
+
+    			],
+
+    			distance: 0
+    		};
+
+    		return moves;
+    	},
+    	rook: function(){
+
+    		var moves = {
+
+    			vectors: [
+
+    				[1, 0],
+    				[0, 1],
+    				[0, -1],
+    				[-1, 0],
+
+    			],
+
+    			distance: 0
+    		};
+
+    		return moves;
+    	},
+    	knight: function(){
+
+    		var moves = {
+
+    			vectors: [
+
+    				[2, -1],
+    				[2, 1],
+    				[-2, -1],
+    				[-2, 1],
+    				[1, 2],
+    				[-1, 2],
+    				[-1, -2],
+    				[1, -2]
+
+    			],
+
+    			distance: -1
+    		};
+
+    		return moves;
+    	},
+    	pawn_black: function(){
+
+    		var moves = {
+
+    			vectors: [
+
+    				[1, 0],
+    	         [1, 1],
+    	         [1, -1],
+    	         [2, 0]
+
+
+    			],
+
+    			distance: 2
+    		};
+
+    		return moves;
+    	},		
+    	pawn_white: function(){
+
+    		var moves = {
+
+    			vectors: [
+
+    				[-1, 0],
+    				[-1, 1],
+    				[-1, -1],
+    				[-2, 0]
+
+    			],
+
+    			distance: 2
+    		};
+
+    		return moves;
+    	},
+    },
    	is_it_a_first_move: {
     	rook1_white: true,
     	rook2_white: true,
@@ -1084,6 +1239,10 @@ var positions = {
     game_status: 'progress',
     win: '',
     check: '',
+    game_mode: '',
+    ai_side: '',
+    AI: false,
+    moves_stack: [],
 };
 
 
