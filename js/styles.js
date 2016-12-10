@@ -30,6 +30,8 @@
 	    	e.returnValue = false;
 		}
 		if(document.querySelector('#check_multi').checked === true){
+
+			//with human
 			(function(){
 				var xhr = new XMLHttpRequest();
 				xhr.open('POST', '/auth', true);
@@ -94,7 +96,7 @@
 
 							loadScript('js/chat.js', function(){
 								document.querySelector('.chat-container').style.display = "block";
-								document.querySelector('.board-container').style.paddingRight = 398.66 + "px";
+								document.querySelector('.ai-settings__x-mark-menu p').innerHTML = 'Chat';
 
 								window.chatBox = new MessageBox();
 									
@@ -137,9 +139,13 @@
 								//positions.set_updates(updates);
 								positions.render();
 								positions.set_possible_moves();
-								var e = new Event('click'); 
-								document.querySelector('.king_' + positions.current_side).dispatchEvent(e);
-								document.body.click();
+								var e = new Event('click_king');
+								var king = document.querySelector('.king_' + positions.current_side);
+
+								king.addEventListener('click_king', function(){
+									this.click();
+									document.body.click();
+								});
 								var id = Math.random().toString().split('.')[1].slice(0, 3).toString();
 								document.addEventListener("load", chat.chat_subscribe(id, positions.name));
 							});
@@ -150,36 +156,203 @@
 				}
 			}.apply(this));
 		}else{
+			// with AI
+			(function(){
+				positions.game_mode = 'single';
+				positions.current_move = true;
+				positions.current_side = 'white';
 
-			positions.game_mode = 'single';
-			positions.current_move = true;
-			positions.current_side = 'white';
-			positions.ai_side = positions.current_side === 'white' ? 'black' : 'white';
+				loadScript('js/chessBot.js', function(){
+					
+					//AI init
+					var bot = new chessBot(positions);
 
-			loadScript('js/chessBot.js', function(){
-				
+					document.body.addEventListener('AI_turn', function(){
+						bot.set_side(positions.current_side);
+						positions.ai_side = positions.current_side;
+						debugger;
+						bot.search((function(){
+							var obj = {
+
+								pruning: document.querySelector('#check_pruning').checked,
+								ordering: document.querySelector('#check_order').checked,
+								depth: +document.getElementsByName('depth')[0].value,
+								eval: {
+									material: document.querySelector('#check_eval_material').checked,
+									position: document.querySelector('#check_eval_position').checked,
+								},
+								output: document.querySelector('.container__ai-output'),
+
+							}; 
+							return obj;
+						}()));
+					});
+
+					// creates ui for AI
+					var board = document.querySelector('.board-container'),
+						icon_menu = document.querySelector('.container__icon-menu'),
+						ai_settings = document.querySelector('.ai-settings'),
+						ai_settings_content = document.createElement('ul');
+						nodes_checked = document.createElement('div'),
+						nodes_count_label = document.createElement('span'),
+						undo_arrow = document.createElement('img'),
+						forward_arrow = document.createElement('img'),
+						autoplay = document.createElement('img'),
+						intervalId = 0;
+
+					nodes_checked.classList.add('container__nodes-checked');
+
+					undo_arrow.src = '../images/arrow.png';
+					forward_arrow.src = '../images/arrow.png';
+					autoplay.src = '../images/autoplay.png';
+					undo_arrow.classList.add('container__undo-arrow');
+					forward_arrow.classList.add('container__forward-arrow');
+					autoplay.classList.add('container__auto');
+					ai_settings.appendChild(ai_settings_content); 
+					ai_settings_content.outerHTML = '<ul class="ai-settings__list"><li class="ai-settings__item">Pruning<input type="checkbox" id="check_pruning" checked><label for="check_pruning"></label></li><li class="ai-settings__item">Move ordering<input type="checkbox" id="check_order" checked><label for="check_order"></label></li><li class="ai-settings__item">Depth<div class="ai-settings__select-div"><select name="depth"><option value="3">3</option><option value="4" selected>4</option><option value="5">5</option></select><div class="ai-settings__item-select">4</div><ul class="ai-settings__item-select-list"><li class="ai-settings__item-select-item" data-value="3">3</li><li class="ai-settings__item-select-item" data-value="4">4</li><li class="ai-settings__item-select-item" data-value="5">5</li></ul></div></li><li class="ai-settings__item">Evaluation<ul class="ai-settings__list"><li class="ai-settings__item">Material<input type="checkbox" id="check_eval_material" checked><label for="check_eval_material"></label></li><li class="ai-settings__item">Position<input type="checkbox" id="check_eval_position" checked><label for="check_eval_position"></label></li></ul></li></ul>';
+
+					nodes_count_label.textContent = "Nodes checked: ";
+					document.querySelector('.ai-settings__x-mark-menu p').innerHTML = 'Settings';
+
+					icon_menu.appendChild(undo_arrow);
+					icon_menu.appendChild(autoplay);
+					icon_menu.appendChild(forward_arrow);
+					icon_menu.appendChild(nodes_count_label);
+					icon_menu.appendChild(nodes_checked);
+
+					console.log('ChessBot loaded');
+					var undo_func = function(e){
+						this.classList.add('active');
+						var that = this;
+						e.stopPropagation();
+						setTimeout(function(){
+							try{
+								positions.tools().undo();
+							}catch(e){
+
+							}
+							positions.render();
+							that.classList.remove('active');
+						}, 0);
+					};
+					undo_arrow.addEventListener('click', undo_func);
+					var forward_func = function(e){
+						this.classList.add('active');
+						var that = this;
+						e.stopPropagation();
+						setTimeout(function(){
+							positions.tools().ai_move();
+							that.classList.remove('active');
+						}, 0);
+					};
+					forward_arrow.addEventListener('click', forward_func);
+					autoplay.addEventListener('click', function(e){
+						e.stopPropagation();
+						this.classList.toggle('active');
+						if(this.classList.contains('active')){
+							undo_arrow.removeEventListener('click', undo_func);
+							forward_arrow.removeEventListener('click', forward_func);
+						}else{
+							undo_arrow.addEventListener('click', undo_func);
+							forward_arrow.addEventListener('click', forward_func);
+						}
+						var that = this;
+						var circle = function(){
+							if(!that.classList.contains('active')){
+								return 0;
+							}
+							positions.tools().ai_move();
+							setTimeout(circle, 0);
+						};
+						setTimeout(function(){
+							circle();
+						}, 0);
+					});
+
+					/// show board
+					document.querySelector('.container-fluid ').style.display = 'block';
+					document.querySelector('.modal').style.display = 'none';
 
 
-				console.log('ChessBot loaded', positions.data);
-				/// PLAY WITH BOT
-				document.querySelector('.container-fluid ').style.display = 'block';
-				document.querySelector('.modal').style.display = 'none';
+					//custom select box
+					[].forEach.call(document.querySelectorAll('.ai-settings__item-select'), function(select){
+						select.style.width = getComputedStyle(select.nextElementSibling).width.substr(0, getComputedStyle(select.nextElementSibling).width.search('px')) - 0 + 20 + 'px';
+						select.addEventListener('click', function(e){
 
-				////???????
-				scale();
-				window.addEventListener('optimizedResize', scale, false);
+							e.stopPropagation();
+							select.classList.toggle('active');
+							select.nextElementSibling.classList.toggle('active');
 
-				/////???????
+						});
 
-				positions.subscribe();
-				//positions.set_updates(updates);
-				positions.render();
-				positions.set_possible_moves();
-				var e = new Event('click'); 
-				document.querySelector('.king_' + positions.current_side).dispatchEvent(e);
-				document.body.click();
-			});
-		}	
+					});
+					[].forEach.call(document.querySelectorAll('.ai-settings__item-select-item'), function(item){
+
+						item.addEventListener('click', function(e){
+							e.stopPropagation();
+							this.parentNode.previousElementSibling.innerHTML = this.dataset.value;
+							var that = this;
+							this.parentNode.classList.toggle('active');
+							this.parentNode.previousElementSibling.classList.toggle('active');
+							[].forEach.call(this.parentNode.parentNode.querySelector('select').children, function(elem){
+									elem.removeAttribute('selected', 'selected');
+									if(elem.value === that.dataset.value){
+
+										elem.setAttribute('selected', 'selected');
+
+									}
+
+							});
+
+						});
+
+					});
+					document.body.addEventListener('click', function(){
+						var lists = document.querySelectorAll('.ai-settings__item-select-list');
+						lists.forEach(function(list){
+
+							if(list.classList.contains('active')){
+								list.classList.remove('active');
+								list.previousElementSibling.classList.remove('active');
+							}
+
+						});
+
+					});
+
+
+					////??????? scale board
+					scale();
+					window.addEventListener('optimizedResize', scale, false);
+
+					positions.tools().set_output_nodes_checked(nodes_checked);
+					positions.render();
+					positions.set_possible_moves();
+
+					//bad hack
+					var e = new Event('click_king');
+					var king = document.querySelector('.king_' + positions.current_side);
+
+					king.addEventListener('click_king', function(){
+						this.click();
+						document.body.click();
+					});
+					king.dispatchEvent(e); 
+				});
+			}());
+		}
+		document.querySelector('.ai-settings__x-mark-menu').firstElementChild.addEventListener('click', function(e){
+			e.stopPropagation();
+			this.parentNode.parentNode.parentNode.classList.remove('row_compressed');
+
+		});
+
+		document.querySelector('.container__menu-button').addEventListener('click', function(e){
+			e.stopPropagation();
+			this.parentNode.parentNode.classList.add('row_compressed');
+
+		});	
+
 	}, false);
 }());
 
@@ -307,7 +480,6 @@ var scale = (function(){
 
 var loadScript = (function(){
 	return function(src, callback){
-
 		var script = document.createElement('script');
 
 

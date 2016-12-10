@@ -60,7 +60,24 @@ var chessBot = (function(){
 			depth = new_depth;
 		};
 
-		this.evaluate = function(){
+		this.set_side = function(new_side){
+			side = new_side;
+		};
+
+		this.pruning = function(){
+			if(branch[-1][3] === 'alpha'){
+				if(branch[-1][0][0] >= branch[-1][0][2]){
+					return 0;
+				}
+			}else{
+				if(branch[-1][0][0] <= branch[-1][0][1]){
+					return 0;
+				}
+			}
+		};
+
+		this.evaluate = function(eval_obj){
+			object.current_move = true;
 			var cost = {
 				'pawn':1,
 				'knight':3,
@@ -69,20 +86,58 @@ var chessBot = (function(){
 				'queen':9,
 				'king':1000
 			};
-			var amount = 0;
-			for(var t in object.data){
-				if(object.data[t][0] !== null){
-					if(t.split('_')[t.split('_').length-1] === side){
-						amount += cost[t.split('_')[0]] === undefined ? cost[t.split('_')[0].substr(0, t.split('_')[0].length-1)] : cost[t.split('_')[0]];
-					}else{
-						amount -= cost[t.split('_')[0]] === undefined ? cost[t.split('_')[0].substr(0, t.split('_')[0].length-1)] : cost[t.split('_')[0]];
+			var max_moves = {
+				'pawn':4,
+				'knight':8,
+				'bishop':13,
+				'rook':14,
+				'queen':27,
+				'king':8
+			};
+			var pieces = {};
+			if(eval_obj.position){
+				var moves_1, moves_2 = 0;
+
+				/// ????????????????????????????????????????????????????????????????????//
+				if(object.current_side === side){
+					moves_1 = this.all_moves_side_func(side);
+					object.current_side = object.current_side === 'white' ? 'black' : 'white';
+					moves_2 = this.all_moves_side_func(side === 'black' ? 'white' : 'black');
+					object.current_side = object.current_side === 'white' ? 'black' : 'white';
+				}else{
+					object.current_side = object.current_side === 'white' ? 'black' : 'white';
+					moves_1 = this.all_moves_side_func(side);
+					object.current_side = object.current_side === 'white' ? 'black' : 'white';
+					moves_2 = this.all_moves_side_func(side === 'black' ? 'white' : 'black');
+				}
+				
+				
+				var arr = moves_1.concat(moves_2);
+				// number of moves for every piece
+				for(var y = 0; y < arr.length; y++){
+					if(pieces[object.matrix[arr[y][0][0]][arr[y][0][1]]] === undefined){
+						pieces[object.matrix[arr[y][0][0]][arr[y][0][1]]] = 0;
 					}
+					pieces[object.matrix[arr[y][0][0]][arr[y][0][1]]] += 1;
 				}
 			}
-			if(amount !== 0){
-				console.log('Amount', amount);
-				if(amount === -3){
-					debugger;
+			var amount = 0;
+			var abs_value = 0;
+			for(var t in object.data){
+				if(object.data[t][0] !== null){
+					if(eval_obj.material){
+						abs_value = cost[t.split('_')[0]] === undefined ? cost[t.split('_')[0].substr(0, t.split('_')[0].length-1)] : cost[t.split('_')[0]];
+					}
+					if(eval_obj.position){
+						if(pieces[t] !== undefined){
+							abs_value += pieces[t] / ( max_moves[t.split('_')[0]] === undefined ? max_moves[t.split('_')[0].substr(0, t.split('_')[0].length-1)] : max_moves[t.split('_')[0]] ) * 0.5;
+						}
+					}
+					if(t.split('_')[t.split('_').length-1] === side){
+						amount += abs_value;
+					}else{
+						amount -= abs_value;
+					}
 				}
 			}
 			return amount;
@@ -117,15 +172,27 @@ var chessBot = (function(){
 
 		/*
 		all_moves_side_func - function to search all moves of current side
-
+		ai_settings         - set of boolean eval properties and depth, for example {pruning:true, depth:'3'}  
 		returns 			- array of move, for example [[2, 1], [3, 1]]
 		*/
-		this.search = function(){
+		this.search = function(ai_settings){
+			// init settings
+			if(ai_settings && ai_settings.depth){
+				this.set_depth(ai_settings.depth);
+			}else{
+				return 0;
+			}
+			var eval_obj = ai_settings.eval;
+			var pruning = ai_settings.pruning;
+			var ordering = ai_settings.ordering;
+			var output = ai_settings.output;
+			//init tree
 			object.AI = true;
 			var real = object;
-			console.log('Real', object.data);
 			object = this.cloner.clone(object);
-			console.log('Cloner', object.data);
+
+			//DOM element is not copied???
+			object.ai_nodes_checked_elem = real.ai_nodes_checked_elem;
 			var node = '';
 			var values = '';
 			var tmp_branch = 0;
@@ -141,27 +208,26 @@ var chessBot = (function(){
 			var res = 0;
 			var calls = 0;
 			var move = [];
-
+			//build nodes
 			var half_move = function half_move(){
 
 				object.current_move = 'true';
 				var arr = this.all_moves_side_func(object.current_side);
 				for(var i = 0; i < arr.length; i++){
 					var m = arr[i];
-					if(branch[-1][3] === 'alpha'){
-						if(branch[-1][0][0] >= branch[-1][0][2]){
+
+					///pruning
+					if(pruning === true){
+						if(this.pruning(branch) === 0){
 							break;
-						}
-					}else{
-						if(branch[-1][0][0] <= branch[-1][0][1]){
-							break;
-						}
+						};
 					}
+
 					node = branch[-1][3] === 'alpha' ? 'beta' : 'alpha';
 
 
-					values = node === 'alpha' ? [Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.POSITIVE_INFINITY] : [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.POSITIVE_INFINITY];
-
+					values = node === 'alpha' ? [Number.NEGATIVE_INFINITY, branch[-1][0][1], branch[-1][0][2]] : [Number.POSITIVE_INFINITY, branch[-1][0][1], branch[-1][0][2]];
+					
 					current_depth++;
 					
 					//move without castling/transforming
@@ -192,7 +258,6 @@ var chessBot = (function(){
 						
 
 						// branch there is not an empty node
-						//debugger;
 						// updating node value, alpha value, beta value
 						res = branch[-1][0][0];
 						tmp_branch = branch;
@@ -216,7 +281,7 @@ var chessBot = (function(){
 
 						branch = branch[1];
 					}else{
-						res = this.evaluate();
+						res = this.evaluate(eval_obj);
 						// branch there is a container for nodes
 						// {
 						//      ... empty ...
@@ -247,26 +312,21 @@ var chessBot = (function(){
 
 				}
 			}.apply(this);
-			debugger;
-			console.log('OVER', tree);
-			object = real; // restore potitions object
+			real.call = object.call;
+
+			object = real; // restore positions object
 			// real move
 			object.AI = false;
 			this.move(tree[tree[-2]][4][0][0], tree[tree[-2]][4][0][1], tree[tree[-2]][4][1][0], tree[tree[-2]][4][1][1], '', object);
 			object.current_side = object.ai_side === 'white' ? 'black' : 'white';
+			object.ai_side = '';
+			object.call = 0;
 			
-
 			return tree[tree[-2]][4];
 		};
 
 	}
 }());
-
-var bot = new chessBot(positions);
-
-document.body.addEventListener('AI_turn', function(){
-	bot.search();
-});
 
 
 

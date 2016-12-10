@@ -71,13 +71,13 @@ var MessageBox = (function(){
 					textarea.value = '';
 				}
 			});
-			/// #message-box + .chat-form should be equal to document.documentElement.clientHeight
-			var clientH = document.documentElement.clientHeight;
-			if(this.box.offsetHeight + form.offsetHeight < clientH){
-				console.log('LESS', clientH, this.box.offsetHeight, form.offsetHeight);
-				// add height to chat form
-				form.style.height = clientH - this.box.offsetHeight + 'px'; 
-			}
+			// /// #message-box + .chat-form should be equal to document.documentElement.clientHeight
+			// var clientH = document.documentElement.clientHeight;
+			// if(this.box.offsetHeight + form.offsetHeight < clientH){
+			// 	console.log('LESS', clientH, this.box.offsetHeight, form.offsetHeight);
+			// 	// add height to chat form
+			// 	form.style.height = clientH - this.box.offsetHeight + 'px'; 
+			// }
 		};
 		this.submit = function(onsubmit){
 			var form = document.querySelector(".chat-form");

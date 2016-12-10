@@ -1,10 +1,19 @@
 var positions = {
+
+	//set_updates calls
 	call: 0,
 	set_updates: function(updates){
 		var updates_container = {};
 		updates_container.updates  = updates;
+
+		// stack of commited moves
 		this.moves_stack.push(updates_container);
-		this.call++;
+
+
+		this.call++;		
+		// output count of moves was done in html element (positions.ai_nodes_checked_elem)
+		this.tools().ai_output_nodes_checked();
+
 		for(var t in updates){
 			if(t === 'game_status'){
 				updates_container.game_status = this.game_status;
@@ -468,9 +477,8 @@ var positions = {
 								// ai operates (build a tree) with copy of same object data as user,
 								// so we should block all DOM operations when ai searching move
 								object.render();
-								debugger;
 								///??????no logic
-								if(object.ai_side === object.current_side){
+								if(object.ai_side === ''){
 									setTimeout((function(){
 										return object.tools().ai_move;
 									})(), 500);
@@ -521,7 +529,7 @@ var positions = {
 									var res = this.get_moves(this.moves[figure](), j, k, object);
 
 									//set callbacks on each of the possible cells for move
-									var arr = res.possible_cells.concat(res.possible_attacks);
+									var arr = res.possible_attacks.concat(res.possible_cells);
 
 									//scan check or stalemate
 									//delete moves from arr to prevent king's vanishing
@@ -654,7 +662,7 @@ var positions = {
 							f = f + '_' + t.split('_')[1];
 						}
 						var all_moves = this.get_moves(this.moves[f](), this.data[t][0], this.data[t][1], this, t.split('_')[1]);
-						all_moves = all_moves.possible_cells.concat(all_moves.possible_attacks);
+						all_moves = all_moves.possible_attacks.concat(all_moves.possible_cells);
 						var trig = 0;
 						for(var b = 0; b < all_moves.length; b++){
 							for(var c = 0; c < arr.length; c++){
@@ -893,6 +901,15 @@ var positions = {
 				});
 				document.body.dispatchEvent(event);
 		    },
+		    set_output_nodes_checked: function(elem){
+		    	this.ai_nodes_checked_elem = elem;
+		    }.bind(object),
+		    ai_output_nodes_checked: function(){
+		    	if(this.call <= 1 || !this.ai_nodes_checked_elem){
+		    		return 0;
+		    	}
+		    	this.ai_nodes_checked_elem.innerText = '' + this.call;
+		    }.bind(object),
 		}
 		return tools;
 	},
@@ -1241,6 +1258,7 @@ var positions = {
     check: '',
     game_mode: '',
     ai_side: '',
+    ai_nodes_checked_elem: {},
     AI: false,
     moves_stack: [],
 };
