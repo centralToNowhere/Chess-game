@@ -42,9 +42,9 @@ var chessBot = (function(){
 			return object.all_moves_side(side);
 		};
 
-		this.move = function(start_j, start_k, finish_j, finish_k, embeded_move, object){
+		this.move = function(start_j, start_k, finish_j, finish_k, embeded_move, object, call){
 
-			object.execute_move(start_j, start_k, finish_j, finish_k, embeded_move, object)();
+			object.execute_move(start_j, start_k, finish_j, finish_k, embeded_move, object, call)();
 
 			return 0;
 		};
@@ -64,7 +64,7 @@ var chessBot = (function(){
 			side = new_side;
 		};
 
-		this.pruning = function(){
+		this.pruning = function(branch){
 			if(branch[-1][3] === 'alpha'){
 				if(branch[-1][0][0] >= branch[-1][0][2]){
 					return 0;
@@ -74,6 +74,91 @@ var chessBot = (function(){
 					return 0;
 				}
 			}
+		};
+
+		this.ordering  = function(arr){
+			var i = 0;
+			var count = arr.length;
+
+			arr.sort(function(a,b){
+
+				var a_val = object.matrix[a[1][0]][a[1][1]] !== null ? 1 : 0;
+				var b_val = object.matrix[b[1][0]][b[1][1]] !== null ? 1 : 0;
+
+				if(b_val - a_val > 0){
+					b[2] = 'attack';
+				}else if(b_val - a_val < 0){
+					a[2] = 'attack';
+				}else if(b_val >= 1 && a_val >= 1){
+					b[2] = 'attack';
+					a[2] = 'attack';
+				}
+
+				return b_val - a_val;
+				i++;
+			});
+			var arr_attacks = [];
+			for(var u = 0; u < arr.length; u++){
+				if(arr[u][2] === 'attack'){
+					arr_attacks.push(arr[u]);
+					arr[u].splice(2,1);
+					arr.splice(u, 1);
+					u--;
+				}
+			}
+
+
+
+
+			var that = this;
+			arr.sort((function(){ 
+
+				return function(a,b){
+
+					function filter(c){
+						var figure = object.matrix[c[0][0]][c[0][1]].split('_')[0];
+						figure = figure[figure.length-1].match( /[0-9]/) != null ? figure.substr(0, figure.length-1) : figure;
+						if(figure.match( /pawn/) != null ){
+							figure = figure + '_' + object.matrix[c[0][0]][c[0][1]].split('_')[1];
+						}
+						return figure;
+					}
+					var fig_a_type = filter(a);
+					var fig_b_type = filter(b);
+						
+					var fig_a = object.matrix[a[0][0]][a[0][1]];
+					var fig_b = object.matrix[b[0][0]][b[0][1]];
+
+					object.matrix[a[0][0]][a[0][1]] = null;
+					object.matrix[a[1][0]][a[1][1]] = fig_a;
+					object.data[fig_a] = [a[1][0], a[1][1]];
+					// that.move(a[0][0], a[0][1], a[1][0], a[1][1], '', object, false);
+					var length_a = object.get_moves(object.moves[fig_a_type](), a[1][0], a[1][1], object).possible_attacks.length;
+					// that.move_undo();
+					object.matrix[a[0][0]][a[0][1]] = fig_a;
+					object.matrix[a[1][0]][a[1][1]] = null;
+					object.data[fig_a] = [a[0][0], a[0][1]];
+
+
+					object.matrix[b[0][0]][b[0][1]] = null;
+					object.matrix[b[1][0]][b[1][1]] = fig_b;
+					object.data[fig_b] = [b[1][0], b[1][1]];
+
+					// that.move(b[0][0], b[0][1], b[1][0], b[1][1], '', object, false);
+					var length_b = object.get_moves(object.moves[fig_b_type](), b[1][0], b[1][1], object).possible_attacks.length;
+					// that.move_undo();
+					object.matrix[b[0][0]][b[0][1]] = fig_b;
+					object.matrix[b[1][0]][b[1][1]] = null;
+					object.data[fig_b] = [b[0][0], b[0][1]];
+
+
+					return length_b - length_a;
+
+				};
+
+			}()));
+			console.log(arr, arr_attacks);
+			return arr_attacks.concat(arr);
 		};
 
 		this.evaluate = function(eval_obj){
@@ -213,6 +298,10 @@ var chessBot = (function(){
 
 				object.current_move = 'true';
 				var arr = this.all_moves_side_func(object.current_side);
+
+				if(ordering === true){
+					arr = this.ordering(arr);
+				}
 				for(var i = 0; i < arr.length; i++){
 					var m = arr[i];
 
@@ -275,7 +364,7 @@ var chessBot = (function(){
 								branch[1][-2] = i;
 							}
 						}
-						this.move_undo(m[0][0], m[0][1], m[1][0], m[1][1], embeded_move, object);
+						this.move_undo();
 
 						current_depth--;
 
@@ -306,7 +395,7 @@ var chessBot = (function(){
 
 						current_depth--;
 
-						this.move_undo(m[0][0], m[0][1], m[1][0], m[1][1], embeded_move, object);
+						this.move_undo();
 
 					}
 

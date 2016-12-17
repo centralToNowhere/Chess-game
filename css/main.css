@@ -349,6 +349,7 @@ chessBot
 	background-color: #CED0B6;
 	color:white;
 	font-size: 1.5em;
+	width:1366px;
 }
 .container__nodes-checked{
 	display: inline-block;
@@ -549,8 +550,6 @@ chessBot
 
 
 
-
-
 /********************************************
 media
 ********************************************/
@@ -640,8 +639,6 @@ media
 			position: absolute;
 			height: 544px;
 		}
-		.board__cell{
-			height: 60px !important;
-		}
+
 	}
 
