@@ -202,9 +202,9 @@
 
 					nodes_checked.classList.add('container__nodes-checked');
 
-					undo_arrow.src = '../images/arrow.png';
-					forward_arrow.src = '../images/arrow.png';
-					autoplay.src = '../images/autoplay.png';
+					undo_arrow.src = './images/arrow.png';
+					forward_arrow.src = './images/arrow.png';
+					autoplay.src = './images/autoplay.png';
 					undo_arrow.classList.add('container__undo-arrow');
 					forward_arrow.classList.add('container__forward-arrow');
 					autoplay.classList.add('container__auto');
