@@ -1,4 +1,4 @@
-var chessBot = (function(){
+var ChessBot = (function(){
 
 	/* object shuld have following properties:
 

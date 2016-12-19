@@ -165,7 +165,7 @@
 				loadScript('js/chessBot.js', function(){
 					
 					//AI init
-					var bot = new chessBot(positions);
+					var bot = new ChessBot(positions);
 
 					document.body.addEventListener('AI_turn', function(){
 						bot.set_side(positions.current_side);
