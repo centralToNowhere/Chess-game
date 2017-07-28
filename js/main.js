@@ -304,75 +304,83 @@ var positions = {
 
 					if(moves.distance === -1 || moves.distance === 2){
 
-						
-
-						if(coordinates[0] + moves.vectors[i][0] < 8 && coordinates[1] + moves.vectors[i][1] < 8 && coordinates[1] + moves.vectors[i][1] >= 0 && coordinates[0] + moves.vectors[i][0] >= 0)
-							if(object.matrix[coordinates[0] +
-								moves.vectors[i][0]][coordinates[1] +
-								moves.vectors[i][1]] === null ){ 
-								if(object.matrix[coordinates[0]][coordinates[1]].split('_')[0].match(/pawn\d/)){
-									if(i === 1 || i === 2){
-										continue;
-									}
-									if(side === 'white'){
-										if(coordinates[0] !== 6){
-							                if(i === 3){
-												continue;                    
-											}
-
-											//transform queen
-
-											if(coordinates[0] === 1){
-												possible_cells.push([coordinates[0] + moves.vectors[i][0], coordinates[1] + moves.vectors[i][1], ['transform', 'queen_' + side]]);
-												continue;                      
-											}
-										}
-										possible_cells.push([coordinates[0] + moves.vectors[i][0], coordinates[1] + moves.vectors[i][1]]);                      
-									}else{         
-								    	if(coordinates[0] !== 1){
-											if(i === 3){ 
-												continue; 
-						                    }
-						                    //transform queen
-						                    if(coordinates[0] === 6){
-												possible_cells.push([coordinates[0] + moves.vectors[i][0], coordinates[1] + moves.vectors[i][1], ['transform', 'queen_' + side]]);
-												continue;                      
-											}
-				                       	}
-										possible_cells.push([coordinates[0] + moves.vectors[i][0], coordinates[1] + moves.vectors[i][1]]);
-									}
-								}else{
-									possible_cells.push([coordinates[0] + moves.vectors[i][0], coordinates[1] + moves.vectors[i][1]]);           
-							    }     
-							}else{
-								if(object.matrix[coordinates[0] + moves.vectors[i][0]][coordinates[1] + moves.vectors[i][1]].split('_')[1] !== side){
+						if(coordinates[0] + moves.vectors[i][0] < 8 && coordinates[1] + moves.vectors[i][1] < 8 && coordinates[1] + moves.vectors[i][1] >= 0 && coordinates[0] + moves.vectors[i][0] >= 0){
+							// if target cell on board is free for move
+								if(object.matrix[coordinates[0] +
+									moves.vectors[i][0]][coordinates[1] +
+									moves.vectors[i][1]] === null ){ 
 									if(object.matrix[coordinates[0]][coordinates[1]].split('_')[0].match(/pawn\d/)){
-						                if(i === 3 || i === 0){
+										if(i === 1 || i === 2){
+											continue;
+										}
+										if(side === 'white'){
+											if(coordinates[0] !== 6){
+								                if(i === 3){
+													continue;                    
+												}
+
+												//transform queen
+
+												if(coordinates[0] === 1){
+													possible_cells.push([coordinates[0] + moves.vectors[i][0], coordinates[1] + moves.vectors[i][1], ['transform', 'queen_' + side]]);
+													continue;                      
+												}
+											}
+											possible_cells.push([coordinates[0] + moves.vectors[i][0], coordinates[1] + moves.vectors[i][1]]);                      
+										}else{         
+									    	if(coordinates[0] !== 1){
+												if(i === 3){ 
+													continue; 
+							                    }
+							                    //transform queen
+							                    if(coordinates[0] === 6){
+													possible_cells.push([coordinates[0] + moves.vectors[i][0], coordinates[1] + moves.vectors[i][1], ['transform', 'queen_' + side]]);
+													continue;                      
+												}
+					                       	}
+											possible_cells.push([coordinates[0] + moves.vectors[i][0], coordinates[1] + moves.vectors[i][1]]);
+										}
+									}else{
+										possible_cells.push([coordinates[0] + moves.vectors[i][0], coordinates[1] + moves.vectors[i][1]]);           
+								    }     
+								}else{
+									if(object.matrix[coordinates[0] + moves.vectors[i][0]][coordinates[1] + moves.vectors[i][1]].split('_')[1] !== side){
+										if(object.matrix[coordinates[0]][coordinates[1]].split('_')[0].match(/pawn\d/)){
+							                if(i === 3 || i === 0){
+							                	if(i === 0){
+							                		delete moves.vectors[3];
+							                		moves.vectors.length = moves.vectors.length-1;
+							                	}
+												continue;                    
+											}else{
+												if(side === 'white'){
+													if(coordinates[0] === 1){
+														possible_attacks.push([coordinates[0] + moves.vectors[i][0], coordinates[1] + moves.vectors[i][1], ['transform', 'queen_' + side]]);
+														continue;
+													}
+												}else{
+													if(coordinates[0] === 6){
+														possible_attacks.push([coordinates[0] + moves.vectors[i][0], coordinates[1] + moves.vectors[i][1], ['transform', 'queen_' + side]]);
+														continue;
+													}
+												}
+												possible_attacks.push([coordinates[0] + moves.vectors[i][0], coordinates[1] + moves.vectors[i][1]]);
+											}
+										}else{
+											possible_attacks.push([coordinates[0] + moves.vectors[i][0], coordinates[1] + moves.vectors[i][1]]);
+										}
+						         	}else{
+						         		if(object.matrix[coordinates[0]][coordinates[1]].split('_')[0].match(/pawn\d/)){
 						                	if(i === 0){
 						                		delete moves.vectors[3];
 						                		moves.vectors.length = moves.vectors.length-1;
 						                	}
 											continue;                    
-										}else{
-											if(side === 'white'){
-												if(coordinates[0] === 1){
-													possible_attacks.push([coordinates[0] + moves.vectors[i][0], coordinates[1] + moves.vectors[i][1], ['transform', 'queen_' + side]]);
-													continue;
-												}
-											}else{
-												if(coordinates[0] === 6){
-													possible_attacks.push([coordinates[0] + moves.vectors[i][0], coordinates[1] + moves.vectors[i][1], ['transform', 'queen_' + side]]);
-													continue;
-												}
-											}
-											possible_attacks.push([coordinates[0] + moves.vectors[i][0], coordinates[1] + moves.vectors[i][1]]);
-										}
-									}else{
-										possible_attacks.push([coordinates[0] + moves.vectors[i][0], coordinates[1] + moves.vectors[i][1]]);
-									}
-					         	}     
-					        	//break;    
-					        }
+						         		}
+						         	}
+						        	//break;    
+						        }
+						    }
 						}
 					}
 					var moves = {
@@ -396,6 +404,14 @@ var positions = {
 					function callback(e){
 						var updates = {
 							deleted: [],
+							is_it_a_first_move: {
+								rook1_white: object.is_it_a_first_move.rook1_white,
+								rook2_white: object.is_it_a_first_move.rook2_white,
+								rook1_black: object.is_it_a_first_move.rook1_black,
+								rook2_black: object.is_it_a_first_move.rook2_black,
+								king_white: object.is_it_a_first_move.king_white,
+								king_black: object.is_it_a_first_move.king_black
+							}
 						};
 						var deleted_figure_name = '';
 						if(start_j !== undefined && start_k !== undefined && finish_k !== undefined && finish_j !== undefined){
@@ -407,13 +423,13 @@ var positions = {
 
 							//castling
 							if(object.matrix[start_j][start_k] === 'king_' + object.current_side){
-								object.is_it_a_first_move['king_' + object.current_side] = false;
+								updates.is_it_a_first_move['king_' + object.current_side] = false;
 							}
 							if(object.matrix[start_j][start_k] === 'rook1_' + object.current_side){
-								object.is_it_a_first_move['rook1_' + object.current_side] = false;
+								updates.is_it_a_first_move['rook1_' + object.current_side] = false;
 							}
 							if(object.matrix[start_j][start_k] === 'rook2_' + object.current_side){
-								object.is_it_a_first_move['rook2_' + object.current_side] = false;
+								updates.is_it_a_first_move['rook2_' + object.current_side] = false;
 							}
 
 
@@ -450,7 +466,6 @@ var positions = {
 								}
 							}
 						}
-						updates.is_it_a_first_move = object.is_it_a_first_move;
 						updates.name = object.name;
 						updates.password = object.password;
 						if(object.game_mode === 'single'){
@@ -710,7 +725,8 @@ var positions = {
 				        return fn.apply(this, args.concat(Array.prototype.slice.call(arguments)));
 				    };
 				}
-				var fn = this.tools().moves_intersection.curry(moves_for_delete);		
+				var fn = this.tools().moves_intersection.curry(moves_for_delete);
+				debugger;		
 				var king = this.data['king_' + this.current_side];
 				var king_nearist_cells = [[king[0] + 1, king[1] + 1],
 										[king[0] - 1, king[1] - 1],
@@ -855,6 +871,7 @@ var positions = {
 
 			undo:function(){
 				var last_update = this.moves_stack.pop();
+
 				for(var t in last_update.updates){
 					if(t === 'game_status'){
 						if(last_update.game_status !== undefined){
@@ -882,16 +899,16 @@ var positions = {
 						}
 					}
 				}
-				if(last_update.side !== undefined){
+				if(typeof last_update.side !== 'undefined'){
 					this.current_side = last_update.side;				
 				}
-				if(last_update.is_it_a_first_move !== undefined){
+				if(typeof last_update.is_it_a_first_move !== 'undefined'){
 					this.is_it_a_first_move = last_update.is_it_a_first_move;
 				}
-				if(last_update.current_move !== undefined){
+				if(typeof last_update.current_move !== 'undefined'){
 					this.current_move = last_update.current_move;
 				}
-				if(last_update.check !== undefined){
+				if(typeof last_update.check !== 'undefined'){
 					this.check = last_update.check;
 				}
 			}.bind(object),
@@ -924,10 +941,13 @@ var positions = {
 	subscribe: function(){
 		var xhr = new XMLHttpRequest();
 		xhr.open("GET", "/subscribe?name=" + this.name + "&rand=" + Math.random().toString().split('.')[1], true);
+		console.log("/subscribe?name=" + this.name + "&rand=" + Math.random().toString().split('.')[1]);
 		xhr.onload = function() {
 			var updates = JSON.parse(this.responseText);
-			positions.set_updates(updates); 
+			positions.set_updates(updates);
+			console.log('Updated'); 
 			positions.render();
+			console.log('Rendered');
 			positions.subscribe();
 
 
@@ -1262,7 +1282,6 @@ var positions = {
     AI: false,
     moves_stack: [],
 };
-
 
 
 

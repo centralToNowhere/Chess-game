@@ -415,16 +415,19 @@ chessBot
 	padding-right: 16px;
 
 }
-.ai-settings__item > [type="checkbox"]{
+.ai-settings__item > [type="checkbox"],
+.ai-settings__item > [type="radio"]{
 	display:none;
 }
-.ai-settings__item > [type="checkbox"] + label{
+.ai-settings__item > [type="checkbox"] + label,
+.ai-settings__item > [type="radio"] + label{
 	position: relative;
 	float: right;
 	padding-left: 25px;
 	cursor: pointer;
 }
-.ai-settings__item > [type="checkbox"] + label:before{
+.ai-settings__item > [type="checkbox"] + label:before,
+.ai-settings__item > [type="radio"] + label:before{
 	content: '';
 	position: absolute;
 	left:0; top: 6px;
@@ -434,7 +437,11 @@ chessBot
 	border-radius: 3px;
 	box-shadow: inset 0 1px 3px rgba(0,0,0,.3)
 }
-.ai-settings__item > [type="checkbox"] + label:after{
+.ai-settings__item > [type="radio"] + label:before{
+	border-radius: 20px;
+}
+.ai-settings__item > [type="checkbox"] + label:after,
+.ai-settings__item > [type="radio"] + label:after{
   content: '✔';
   position: absolute;
   top: 7px; left: 2px;
@@ -443,11 +450,13 @@ chessBot
   color: #5CBAFC;
   transition: all .2s;
 }
-.ai-settings__item > [type="checkbox"]:not(:checked) + label:after{
+.ai-settings__item > [type="checkbox"]:not(:checked) + label:after,
+.ai-settings__item > [type="radio"]:not(:checked) + label:after{
 	opacity: 0;
 	transform: scale(0);
 }
-.ai-settings__item > [type="checkbox"]:checked + label:after{
+.ai-settings__item > [type="checkbox"]:checked + label:after,
+.ai-settings__item > [type="radio"]:checked + label:after{
 	opacity: 1;
 	transform: scale(1);
 }

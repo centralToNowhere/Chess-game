@@ -17,7 +17,7 @@ var ChessBot = (function(){
 		all_moves_side(side) - function returns 3n array moves of current side [[[2, 1], [3, 1]],[...]]
 		where [2, 1] - start cell, [3, 1] - target cell
 
-			side - string side for which we want to have all moves ('white', 'black') 
+		side - string side for which we want to have all moves ('white', 'black') 
 
 		execute_move(start_j, start_k, finish_j, finish_k, embeded_move, object) - function, returns function that update board positions;
 
@@ -38,6 +38,16 @@ var ChessBot = (function(){
 		var current_depth = 1;
 		var side = object.current_side === 'white' ? 'black' : 'white';
 
+
+		this.cost = {
+			'pawn':100,
+			'knight':320,
+			'bishop':330,
+			'rook':500,
+			'queen':900,
+			'king':10000
+		};
+
 		this.all_moves_side_func = function(side){
 			return object.all_moves_side(side);
 		};
@@ -50,7 +60,7 @@ var ChessBot = (function(){
 		};
 
 		this.move_undo = function(){
-; 
+
 			object.tools().undo();
 
 			return 0;
@@ -65,22 +75,29 @@ var ChessBot = (function(){
 		};
 
 		this.pruning = function(branch){
+
 			if(branch[-1][3] === 'alpha'){
-				if(branch[-1][0][0] >= branch[-1][0][2]){
+				// value >= beta (beta cut-off)
+				if(branch[-1][0][0] > branch[-1][0][2]){
 					return 0;
 				}
 			}else{
-				if(branch[-1][0][0] <= branch[-1][0][1]){
+				// value <= alpha 
+				if(branch[-1][0][0] < branch[-1][0][1]){
 					return 0;
 				}
 			}
+
 		};
 
 		this.ordering  = function(arr){
+			debugger;
 			var i = 0;
 			var count = arr.length;
+			var that = this;
 
 			arr.sort(function(a,b){
+				// taking (attacks)
 
 				var a_val = object.matrix[a[1][0]][a[1][1]] !== null ? 1 : 0;
 				var b_val = object.matrix[b[1][0]][b[1][1]] !== null ? 1 : 0;
@@ -107,13 +124,31 @@ var ChessBot = (function(){
 				}
 			}
 
+			// less valuable atacker / most valuable victim
+			arr_attacks.sort(function(a, b){
+				function cost(move){
+					var name1 = object.matrix[move[0][0]][move[0][1]],
+						name2 = object.matrix[move[1][0]][move[1][1]];
+						type1 = name1.split('_')[0],
+						type2 = name2.split('_')[0],
+						// color1 = name1.split('_')[name1.split('_').length-1],
+						// color2 = name2.split('_')[name2.split('_').length-1],
+						cost1 = that.cost[type1] === undefined ? that.cost[type1.substr(0, type1.length-1)] : that.cost[type1],
+						cost2 = that.cost[type2] === undefined ? that.cost[type2.substr(0, type2.length-1)] : that.cost[type2];
+
+					return cost2 - cost1;
+				}
+
+				return cost(b) - cost(a);
+
+			});
 
 
 
-			var that = this;
 			arr.sort((function(){ 
 
 				return function(a,b){
+					// threats
 
 					function filter(c){
 						var figure = object.matrix[c[0][0]][c[0][1]].split('_')[0];
@@ -129,24 +164,23 @@ var ChessBot = (function(){
 					var fig_a = object.matrix[a[0][0]][a[0][1]];
 					var fig_b = object.matrix[b[0][0]][b[0][1]];
 
+					//make move a
 					object.matrix[a[0][0]][a[0][1]] = null;
 					object.matrix[a[1][0]][a[1][1]] = fig_a;
 					object.data[fig_a] = [a[1][0], a[1][1]];
-					// that.move(a[0][0], a[0][1], a[1][0], a[1][1], '', object, false);
 					var length_a = object.get_moves(object.moves[fig_a_type](), a[1][0], a[1][1], object).possible_attacks.length;
-					// that.move_undo();
+					// undo move a
 					object.matrix[a[0][0]][a[0][1]] = fig_a;
 					object.matrix[a[1][0]][a[1][1]] = null;
 					object.data[fig_a] = [a[0][0], a[0][1]];
 
-
+					// make move b
 					object.matrix[b[0][0]][b[0][1]] = null;
 					object.matrix[b[1][0]][b[1][1]] = fig_b;
 					object.data[fig_b] = [b[1][0], b[1][1]];
 
-					// that.move(b[0][0], b[0][1], b[1][0], b[1][1], '', object, false);
 					var length_b = object.get_moves(object.moves[fig_b_type](), b[1][0], b[1][1], object).possible_attacks.length;
-					// that.move_undo();
+					// undo move b
 					object.matrix[b[0][0]][b[0][1]] = fig_b;
 					object.matrix[b[1][0]][b[1][1]] = null;
 					object.data[fig_b] = [b[0][0], b[0][1]];
@@ -161,15 +195,86 @@ var ChessBot = (function(){
 			return arr_attacks.concat(arr);
 		};
 
+		this.orderingStrict = function(arr, node){
+			var buffer = [],
+				res = 0,
+				sortedArr = [];
+
+			arr.forEach(function(m, index){
+				this.move(m[0][0], m[0][1], m[1][0], m[1][1], '', object);
+				res = this.evaluate({
+					position: true,
+					material: true
+				})
+				this.move_undo();
+				buffer.push([res, index]);
+			}, this);
+
+			buffer.sort(function(a, b){
+				if(node === 'alpha'){
+					return b[0] - a[0];
+				}else if(node === 'beta'){
+					return a[0] - b[0];
+				}
+			}).forEach(function(elem, index){
+				sortedArr.push(arr[elem[1]]);
+			});
+
+			return sortedArr;
+		}
+
 		this.evaluate = function(eval_obj){
 			object.current_move = true;
-			var cost = {
-				'pawn':1,
-				'knight':3,
-				'bishop':3,
-				'rook':5,
-				'queen':9,
-				'king':1000
+
+			var costTable = {
+				pawn: [[0,0,0,0,0,0,0,0],
+						[99,99,99,99,99,99,99,99],
+						[50,50,50,50,50,50,50,50],
+						[5,5,10,25,25,10,5,5],
+						[0,0,0,20,20,0,0,0],
+						[5,-5,-10,0,0,-10,-5,5],
+						[5,10,10,-20,-20,10,10,5],
+						[0,0,0,0,0,0,0,0]],
+				knight: [[-50,-40,-30,-30,-30,-30,-40,-50],
+						[-40,-20,0,0,0,0,-20,-40],
+						[-30,0,10,15,15,10,0,-30],
+						[-30,5,15,20,20,15,5,-30],
+						[-30,0,15,20,20,15,0,-30],
+						[-30,5,10,15,15,10,5,-30],
+						[-40,-20,0,5,5,0,-20,-40],
+						[-50,-40,-30,-30,-30,-30,-40,-50]],
+				bishop: [[-20,-10,-10,-10,-10,-10,-10,-20],
+						[-10,0,0,0,0,0,0,-10],
+						[-10,0,5,10,10,5,0,-10],
+						[-10,5,5,10,10,5,5,-10],
+						[-10,0,10,10,10,10,0,-10],
+						[-10,10,10,10,10,10,10,-10],
+						[-10,5,0,0,0,0,5,-10],
+						[-20,-10,-10,-10,-10,-10,-10,-20]],
+				rook: 	[[0,0,0,0,0,0,0,0],
+						[5,10,10,10,10,10,10,5],
+						[-5,0,0,0,0,0,0,-5],
+						[-5,0,0,0,0,0,0, -5],
+						[-5,0,0,0,0,0,0, -5],
+						[-5,0,0,0,0,0,0, -5],
+						[-5,0,0,0,0,0,0, -5],
+						[0,0,0,5,5,0,0,0]],
+				queen: [[-20,-10,-10,-5,-5,-10,-10,-20],
+						[-10,0,0,0,0,0,0,-10],
+						[-10,0,5,5,5,5,0,-10],
+						[-5,0,5,5,5,5,0,-5],
+						[0,0,5,5,5,5,0,-5],
+						[-10,5,5,5,5,5,0,-10],
+						[-10,0,5,0,0,0,0,-10],
+						[-20,-10,-10,-5,-5,-10,-10,-20]],
+				king:  [[-30,-40,-40,-50,-50,-40,-40,-30],
+						[-30,-40,-40,-50,-50,-40,-40,-30],
+						[-30,-40,-40,-50,-50,-40,-40,-30],
+						[-30,-40,-40,-50,-50,-40,-40,-30],
+						[-20,-30,-30,-40,-40,-30,-30,-20],
+						[-10,-20,-20,-20,-20,-20,-20,-10],
+						[20,20,0,0,0,0,20,20],
+						[0,30,10,0,0,10,30,0]]
 			};
 			var max_moves = {
 				'pawn':4,
@@ -179,49 +284,69 @@ var ChessBot = (function(){
 				'queen':27,
 				'king':8
 			};
-			var pieces = {};
-			if(eval_obj.position){
-				var moves_1, moves_2 = 0;
+			// var pieces = {};
+			// if(eval_obj.position){
+			// 	var moves_1, moves_2 = 0;
 
-				/// ????????????????????????????????????????????????????????????????????//
-				if(object.current_side === side){
-					moves_1 = this.all_moves_side_func(side);
-					object.current_side = object.current_side === 'white' ? 'black' : 'white';
-					moves_2 = this.all_moves_side_func(side === 'black' ? 'white' : 'black');
-					object.current_side = object.current_side === 'white' ? 'black' : 'white';
-				}else{
-					object.current_side = object.current_side === 'white' ? 'black' : 'white';
-					moves_1 = this.all_moves_side_func(side);
-					object.current_side = object.current_side === 'white' ? 'black' : 'white';
-					moves_2 = this.all_moves_side_func(side === 'black' ? 'white' : 'black');
-				}
+			// 	/// ????????????????????????????????????????????????????????????????????//
+			// 	if(object.current_side === side){
+			// 		moves_1 = this.all_moves_side_func(side);
+			// 		object.current_side = object.current_side === 'white' ? 'black' : 'white';
+			// 		moves_2 = this.all_moves_side_func(side === 'black' ? 'white' : 'black');
+			// 		object.current_side = object.current_side === 'white' ? 'black' : 'white';
+			// 	}else{
+			// 		object.current_side = object.current_side === 'white' ? 'black' : 'white';
+			// 		moves_1 = this.all_moves_side_func(side);
+			// 		object.current_side = object.current_side === 'white' ? 'black' : 'white';
+			// 		moves_2 = this.all_moves_side_func(side === 'black' ? 'white' : 'black');
+			// 	}
 				
 				
-				var arr = moves_1.concat(moves_2);
-				// number of moves for every piece
-				for(var y = 0; y < arr.length; y++){
-					if(pieces[object.matrix[arr[y][0][0]][arr[y][0][1]]] === undefined){
-						pieces[object.matrix[arr[y][0][0]][arr[y][0][1]]] = 0;
-					}
-					pieces[object.matrix[arr[y][0][0]][arr[y][0][1]]] += 1;
-				}
-			}
-			var amount = 0;
-			var abs_value = 0;
+			// 	var arr = moves_1.concat(moves_2);
+			// 	// // number of moves for every piece
+			// 	// for(var y = 0; y < arr.length; y++){
+			// 	// 	if(pieces[object.matrix[arr[y][0][0]][arr[y][0][1]]] === undefined){
+			// 	// 		pieces[object.matrix[arr[y][0][0]][arr[y][0][1]]] = 0;
+			// 	// 	}
+			// 	// 	pieces[object.matrix[arr[y][0][0]][arr[y][0][1]]] += 1;
+			// 	// }
+			// }
+			var amount = 0,
+				abs_value = 0,
+				cost = 0,
+				piece_type = '',
+				piece_color = '',
+				i = null,
+				j = null;
+
 			for(var t in object.data){
-				if(object.data[t][0] !== null){
+				i = object.data[t][0];
+				j = object.data[t][1];
+				piece_type = t.split('_')[0];
+				piece_color = t.split('_')[t.split('_').length-1];
+				if(i !== null){
 					if(eval_obj.material){
-						abs_value = cost[t.split('_')[0]] === undefined ? cost[t.split('_')[0].substr(0, t.split('_')[0].length-1)] : cost[t.split('_')[0]];
+						abs_value = this.cost[piece_type] === undefined ? this.cost[piece_type.substr(0, piece_type.length-1)] : this.cost[piece_type];
 					}
+
 					if(eval_obj.position){
-						if(pieces[t] !== undefined){
-							abs_value += pieces[t] / ( max_moves[t.split('_')[0]] === undefined ? max_moves[t.split('_')[0].substr(0, t.split('_')[0].length-1)] : max_moves[t.split('_')[0]] ) * 0.5;
+						// position 1
+						// if(pieces[t] !== undefined){
+						// 	abs_value += pieces[t] / ( max_moves[piece_type] === undefined ? max_moves[piece_type.substr(0, piece_type.length-1)] : max_moves[piece_type] ) * 0.5;
+						// }
+						// position 2
+						if(piece_color === 'white'){
+							cost = costTable[piece_type] === undefined ? costTable[piece_type.substr(0, piece_type.length-1)][i][j] : costTable[piece_type][i][j]; 
+						}else if(piece_color === 'black'){
+							cost = costTable[piece_type] === undefined ? costTable[piece_type.substr(0, piece_type.length-1)][7 - i][j] : costTable[piece_type][7 - i][j]; 
 						}
 					}
-					if(t.split('_')[t.split('_').length-1] === side){
+					if(piece_color === side){
 						amount += abs_value;
+						amount += cost;
 					}else{
 						amount -= abs_value;
+						amount -= cost;
 					}
 				}
 			}
@@ -255,12 +380,302 @@ var ChessBot = (function(){
 		    }
 		},
 
+		this.negascout = function(ai_settings){
+
+			
+
+			// init settings
+			if(ai_settings && ai_settings.depth){
+				this.set_depth(ai_settings.depth);
+			}else{
+				return 0;
+			}
+
+			var eval_obj = ai_settings.eval;
+			var output = ai_settings.output;
+
+			//init tree
+			object.AI = true;
+			var real = object;
+			object = this.cloner.clone(object);
+
+			//DOM element is not copied???
+			object.ai_nodes_checked_elem = real.ai_nodes_checked_elem;
+			var node = '';
+			var values = '';
+			var search_window = 1;
+			var tmp_branch = 0;
+			var initial_node = {
+				0:[Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.POSITIVE_INFINITY], // supposed to persist array [node_value, alpha_value, beta_value, m]
+				1:{}, // link to all child objects, -1 - link to self object, -2 - child node id that leads to the best move
+				2:0, // link to parent object
+				3:'alpha', // alpha or beta node
+				4:[] // array of move to reach this node
+			};
+
+			initial_node[1][-1] = initial_node; // link to self object
+			initial_node[1][-2] = 0;
+			var tree = branch = initial_node[1];
+			var res = 0;
+			var calls = 0;
+			var move = [];
+
+
+			//build nodes (branch  - child nodes) 
+			var half_move = function half_move(research_id){
+
+				debugger;
+
+				object.current_move = 'true';
+
+				var arr = this.all_moves_side_func(object.current_side);
+
+				// ordering
+				// arr = this.orderingStrict(arr, branch[-1][3]);
+				arr = this.ordering(arr);
+
+				for(var i = 0; i < arr.length; i++){
+
+					if(typeof research_id !== 'undefined' && i !== research_id){
+						continue;
+					}
+
+					// move coordinates
+					var m = arr[i];
+
+
+					if(this.pruning(branch) === 0){
+						break;
+					};
+
+
+					node = branch[-1][3] === 'alpha' ? 'beta' : 'alpha';
+
+
+					//set window
+					if(i !== 0){
+						values = node === 'alpha' ? [Number.NEGATIVE_INFINITY, branch[-1][0][2] - 1, branch[-1][0][2]] : [Number.POSITIVE_INFINITY, branch[-1][0][1], branch[-1][0][1] + 1];
+						search_window = 0;
+					}else{
+						values = node === 'alpha' ? [Number.NEGATIVE_INFINITY, branch[-1][0][1], branch[-1][0][2]] : [Number.POSITIVE_INFINITY, branch[-1][0][1], branch[-1][0][2]];
+						search_window = 1;
+					}
+
+					if(typeof research_id !== 'undefined' && i === research_id){
+						values = node === 'alpha' ? [Number.NEGATIVE_INFINITY, branch[-1][0][1], branch[-1][0][2]] : [Number.POSITIVE_INFINITY, branch[-1][0][1], branch[-1][0][2]];
+						search_window = 1;
+					}
+
+
+					current_depth++;
+					
+					//move without castling/transforming
+					var embeded_move = '';
+
+					this.move(m[0][0], m[0][1], m[1][0], m[1][1], embeded_move, object);
+
+					var parent_node = branch;
+					
+					branch[i] = {
+						0:values, // supposed to persist array [node_value, alpha_value, beta_value]
+						1:{}, // branch of next moves after current
+						2:parent_node, // link to parent object
+						3:node, // alpha or beta node
+						4:m, // array of move to reach this node
+						5:search_window // search window, 0 - null window, 1 - full search
+					};
+
+					branch[i][1][-1] = branch[i]; // property that point to parent of same level nodes array
+					// number of current best move in a row, store it in branch[-2]
+					if(i === 0 && typeof branch[-2] === 'undefined'){
+						branch[-2] = 0;
+					}
+					// go to the lower branches
+					branch = branch[i][1];
+					
+					var trig = 0;
+
+					if(current_depth < depth){
+
+						object.current_side = object.current_side === 'white' ? 'black' : 'white';
+
+						half_move.apply(this);
+
+						object.current_side = object.current_side === 'white' ? 'black' : 'white';
+						
+
+
+						// branch there is not an empty node
+						// updating node value, alpha value, beta value
+						res = branch[-1][0][0]; //value
+						null_search = branch[-1][5];
+						tmp_branch = branch;
+						branch = branch[-1][2][-1]; // go to parent node
+
+						
+						if(branch[3] === 'alpha'){
+
+							if(null_search === 0){ // null window?
+
+								//re-search
+								if(i !== 0 &&  res > branch[0][1] && res < branch[0][2]){
+
+									debugger;
+									// delete child node
+									branch[1][i] = null;
+
+									// object.current_side = object.current_side === 'white' ? 'black' : 'white';
+
+									branch = branch[1];
+
+									this.move_undo();
+
+									current_depth--;
+
+									trig = 1;
+
+									half_move.apply(this, [i]);
+
+									// object.current_side = object.current_side === 'white' ? 'black' : 'white';
+
+									res = branch[i][0][0]; //value
+									tmp_branch = branch;
+									branch = branch[-1];
+
+								}
+
+							}
+
+							// value > max
+							if(res > branch[0][0]){
+								branch[0][0] = res;
+								branch[1][-2] = i;
+							}
+							// value > alpha
+							if(res > branch[0][1]){
+								branch[0][1] = res;
+							}
+
+						}else{
+
+							if(null_search === 0){ // null window?
+
+								//re-search
+								if(i !== 0 && res > branch[0][1] && res < branch[0][2]){
+
+									debugger;
+									// delete child node
+									branch[1][i] = null;
+
+									// object.current_side = object.current_side === 'white' ? 'black' : 'white';
+
+									branch = branch[1];
+
+									this.move_undo();
+
+									current_depth--;
+
+									trig = 1;
+
+									half_move.apply(this, [i]); 
+
+									// object.current_side = object.current_side === 'white' ? 'black' : 'white';
+
+									res = branch[i][0][0]; //value
+									tmp_branch = branch;
+									branch = branch[-1]; // go to parent node
+								}
+
+							}
+
+							// value < min
+							if(res < branch[0][0]){
+								branch[0][0] = res;
+								branch[1][-2] = i;
+							}
+							// value < beta
+							if(res < branch[0][2]){
+								branch[0][2] = res;
+							}
+						}
+
+
+						branch = branch[1];
+					}else{
+						res = this.evaluate(eval_obj);
+						// branch there is a container for nodes
+						// {
+						//      ... empty ...
+						//      -1:  --- parent node
+						// }
+						tmp_branch = branch;
+						branch = branch[-1][2][-1]; // go to parent node
+
+						if(branch[3] === 'alpha'){
+
+							// value > max
+							if(res > branch[0][0]){
+								branch[0][0] = res;
+								branch[1][-2] = i;
+							}
+							// value > alpha
+							if(res > branch[0][1]){
+								branch[0][1] = res;
+							}
+
+						}else{
+
+							// value > min
+							if(res < branch[0][0]){
+								branch[0][0] = res;
+								branch[1][-2] = i;
+							}
+							// value < beta
+							if(res < branch[0][2]){
+								branch[0][1] = res;
+							}
+						}
+
+						branch = tmp_branch[-1][2];
+
+
+					}
+
+					if(trig === 0){
+
+						this.move_undo();
+
+						current_depth--;
+
+					}else{
+
+						trig = 0;
+
+					}
+
+
+				}
+			}.apply(this);
+			real.call = object.call;
+
+			object = real; // restore positions object
+			// real move
+			object.AI = false;
+			this.move(tree[tree[-2]][4][0][0], tree[tree[-2]][4][0][1], tree[tree[-2]][4][1][0], tree[tree[-2]][4][1][1], '', object);
+			object.current_side = object.ai_side === 'white' ? 'black' : 'white';
+			object.ai_side = '';
+			object.call = 0;
+			
+			return tree[tree[-2]][4];
+		};
+
 		/*
 		all_moves_side_func - function to search all moves of current side
 		ai_settings         - set of boolean eval properties and depth, for example {pruning:true, depth:'3'}  
 		returns 			- array of move, for example [[2, 1], [3, 1]]
 		*/
-		this.search = function(ai_settings){
+		this.alphaBeta = function(ai_settings){
+			debugger;
 			// init settings
 			if(ai_settings && ai_settings.depth){
 				this.set_depth(ai_settings.depth);
@@ -288,11 +703,19 @@ var ChessBot = (function(){
 				3:'alpha', // alpha or beta node
 				4:[] // array of move to reach this node
 			};
+
 			initial_node[1][-1] = initial_node; // link to self object
+			initial_node[1][-2] = 0;
 			var tree = branch = initial_node[1];
 			var res = 0;
 			var calls = 0;
 			var move = [];
+
+			// branch here is an inner node
+			// {
+			//      ... empty ...
+			//      -1:  --- self
+			// }
 			//build nodes
 			var half_move = function half_move(){
 
@@ -300,9 +723,11 @@ var ChessBot = (function(){
 				var arr = this.all_moves_side_func(object.current_side);
 
 				if(ordering === true){
+					// arr = this.orderingStrict(arr, branch[-1][3]);
 					arr = this.ordering(arr);
 				}
 				for(var i = 0; i < arr.length; i++){
+					// move coordinates
 					var m = arr[i];
 
 					///pruning
@@ -314,9 +739,8 @@ var ChessBot = (function(){
 
 					node = branch[-1][3] === 'alpha' ? 'beta' : 'alpha';
 
+					values = node === 'alpha' ? [Number.NEGATIVE_INFINITY, branch[-1][0][1], branch[-1][0][2]] : [Number.POSITIVE_INFINITY, branch[-1][0][1], branch[-1][0][2]];	
 
-					values = node === 'alpha' ? [Number.NEGATIVE_INFINITY, branch[-1][0][1], branch[-1][0][2]] : [Number.POSITIVE_INFINITY, branch[-1][0][1], branch[-1][0][2]];
-					
 					current_depth++;
 					
 					//move without castling/transforming
@@ -335,33 +759,72 @@ var ChessBot = (function(){
 					};
 
 					branch[i][1][-1] = branch[i]; // property that point to parent of same level nodes array
+					// number of current best move in a row, store it in branch[-2]
+					if(i === 0 && typeof branch[-2] === 'undefined'){
+						branch[-2] = 0;
+					}
 					// go to the lower branches
-					branch = branch[i][1];
+					branch = branch[i][1];	
 					
 					
 					if(current_depth < depth){
 
 						object.current_side = object.current_side === 'white' ? 'black' : 'white';
+						
+						// branch before
+						// {
+						//      ... empty ...
+						//      -1:  --- self
+						// }
+
 						half_move.apply(this);
+
+						//	branch after
+						// inner node
+						// {
+						//      0: {}
+						//		1: {}
+						//		2: {}
+						//		.....
+						//      -1:  --- self
+						// }
+
 						object.current_side = object.current_side === 'white' ? 'black' : 'white';
 						
 
 						// branch there is not an empty node
+						// inner node
+						// {
+						//      0: {}
+						//		1: {}
+						//		2: {}
+						//		...
+						//      -1:  --- self
+						//		-2: ...
+						// }
 						// updating node value, alpha value, beta value
-						res = branch[-1][0][0];
+						res = branch[-1][0][0]; //value
 						tmp_branch = branch;
 						branch = branch[-1][2][-1]; // go to parent node
 						if(branch[3] === 'alpha'){
+
+							if(branch[0][0] < res){
+								branch[0][0] = res;
+								branch[1][-2] = i;
+							}
+							// if alpha < result
 							if(branch[0][1] < res){
 								branch[0][1] = res;
-								branch[0][0] = res;
-								branch[1][-2] = i;
 							} 
 						}else{
-							if(branch[0][2] > res){
-								branch[0][2] = res;
+							
+							if(branch[0][0] > res){
 								branch[0][0] = res;
 								branch[1][-2] = i;
+							}
+							// if beta > result
+							if(branch[0][2] > res){
+								branch[0][2] = res;
 							}
 						}
 						this.move_undo();
@@ -369,36 +832,68 @@ var ChessBot = (function(){
 						current_depth--;
 
 						branch = branch[1];
+						// inner node
+						// {
+						//      0: {}
+						//		1: {}
+						//		2: {}
+						//      -1:  --- self
+						// }
 					}else{
 						res = this.evaluate(eval_obj);
 						// branch there is a container for nodes
+						// inner node
 						// {
 						//      ... empty ...
-						//      -1:  --- parent node
+						//      -1:  --- self
 						// }
 						tmp_branch = branch;
 						branch = branch[-1][2][-1]; // go to parent node
+						//	branch - outer node
+						// {
+						// 		0:values,
+						// 		1:{}
+						// 		2:parent_node
+						// 		3:node
+						// 		4:m
+						//	}
+
 						if(branch[3] === 'alpha'){
-							if(branch[0][1] < res){
-								branch[0][1] = res;
-								branch[0][0] = res;
-								branch[1][-2] = i;
-							} 
-						}else{
-							if(branch[0][2] > res){
-								branch[0][2] = res;
+
+							if(branch[0][0] < res){
 								branch[0][0] = res;
 								branch[1][-2] = i;
 							}
+							// if alpha < value
+							if(branch[0][1] < res){
+								branch[0][1] = res;
+							} 
+						}else{
+							
+							if(branch[0][0] > res){
+								branch[0][0] = res;
+								branch[1][-2] = i;
+							}
+							// if beta > value 
+							if(branch[0][2] > res){
+								branch[0][2] = res;
+							}
 						}
+
 						branch = tmp_branch[-1][2];
+						// inner node
+						// {
+						//      0: {}
+						//		1: {}
+						//		2: {}
+						//      -1:  --- self
+						// }
 
 						current_depth--;
 
 						this.move_undo();
 
 					}
-
 				}
 			}.apply(this);
 			real.call = object.call;

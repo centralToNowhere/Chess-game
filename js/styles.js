@@ -2,6 +2,7 @@
 ///////// auth /////////////
 
 (function(){
+	//radio buttons
 	var rads = document.querySelector('.game-auth').mode;
 	[].concat.apply(rads, document.querySelectorAll('.check_mode'));
 	var prev = null;
@@ -135,8 +136,10 @@
 								}
 
 
+								
+
+
 								positions.subscribe();
-								//positions.set_updates(updates);
 								positions.render();
 								positions.set_possible_moves();
 								var e = new Event('click_king');
@@ -147,7 +150,10 @@
 									document.body.click();
 								});
 								var id = Math.random().toString().split('.')[1].slice(0, 3).toString();
-								document.addEventListener("load", chat.chat_subscribe(id, positions.name));
+
+								chat.chat_subscribe(id, positions.name);
+
+
 							});
 						}catch(e){
 							console.log(e);
@@ -170,22 +176,63 @@
 					document.body.addEventListener('AI_turn', function(){
 						bot.set_side(positions.current_side);
 						positions.ai_side = positions.current_side;
-						debugger;
-						bot.search((function(){
-							var obj = {
+						var algorithm = document.querySelector('input[name="check_algo"]:checked').value;
+						switch(algorithm){
 
-								pruning: document.querySelector('#check_pruning').checked,
-								ordering: document.querySelector('#check_order').checked,
-								depth: +document.getElementsByName('depth')[0].value,
-								eval: {
-									material: document.querySelector('#check_eval_material').checked,
-									position: document.querySelector('#check_eval_position').checked,
-								},
-								output: document.querySelector('.container__ai-output'),
+							case 'minimax':
+								bot.alphaBeta((function(){
+									var obj = {
 
-							}; 
-							return obj;
-						}()));
+										pruning: false,
+										ordering: true,
+										depth: +document.getElementsByName('depth')[0].value,
+										eval: {
+											material: document.querySelector('#check_eval_material').checked,
+											position: document.querySelector('#check_eval_position').checked,
+										},
+										output: document.querySelector('.container__ai-output'),
+
+									}; 
+									return obj;
+								}()));
+								break;
+
+							case 'alphaBeta':
+								bot.alphaBeta((function(){
+									var obj = {
+
+										pruning: true,
+										ordering: document.querySelector('#algo_alphaBeta_ordering').checked,
+										depth: +document.getElementsByName('depth')[0].value,
+										eval: {
+											material: document.querySelector('#check_eval_material').checked,
+											position: document.querySelector('#check_eval_position').checked,
+										},
+										output: document.querySelector('.container__ai-output'),
+
+									}; 
+									return obj;
+								}()));
+								break;
+
+							case 'negaScout':
+								bot.negascout((function(){
+									var obj = {
+
+										depth: +document.getElementsByName('depth')[0].value,
+										eval: {
+											material: document.querySelector('#check_eval_material').checked,
+											position: document.querySelector('#check_eval_position').checked,
+										},
+										output: document.querySelector('.container__ai-output'),
+
+									}; 
+									return obj;
+								}()));
+								break;
+
+						}
+						
 					});
 
 					// creates ui for AI
@@ -209,7 +256,7 @@
 					forward_arrow.classList.add('container__forward-arrow');
 					autoplay.classList.add('container__auto');
 					ai_settings.appendChild(ai_settings_content); 
-					ai_settings_content.outerHTML = '<ul class="ai-settings__list"><li class="ai-settings__item">Pruning<input type="checkbox" id="check_pruning" checked><label for="check_pruning"></label></li><li class="ai-settings__item">Move ordering<input type="checkbox" id="check_order" checked><label for="check_order"></label></li><li class="ai-settings__item">Depth<div class="ai-settings__select-div"><select name="depth"><option value="3">3</option><option value="4" selected>4</option><option value="5">5</option></select><div class="ai-settings__item-select">4</div><ul class="ai-settings__item-select-list"><li class="ai-settings__item-select-item" data-value="3">3</li><li class="ai-settings__item-select-item" data-value="4">4</li><li class="ai-settings__item-select-item" data-value="5">5</li></ul></div></li><li class="ai-settings__item">Evaluation<ul class="ai-settings__list"><li class="ai-settings__item">Material<input type="checkbox" id="check_eval_material" checked><label for="check_eval_material"></label></li><li class="ai-settings__item">Position<input type="checkbox" id="check_eval_position" checked><label for="check_eval_position"></label></li></ul></li></ul>';
+					ai_settings_content.outerHTML = '<ul class="ai-settings__list">Search algorithm <li class="ai-settings__item">Minimax <input type="radio" name="check_algo" value="minimax" id="algo_minimax"> <label for="algo_minimax"></label> </li><li class="ai-settings__item">Alpha-Beta <input type="radio" name="check_algo" value="alphaBeta" id="algo_alphaBeta" checked> <label for="algo_alphaBeta"></label> <ul class="ai-settings__list"> <li class="ai-settings__item">Ordering <input type="checkbox" id="algo_alphaBeta_ordering" checked> <label for="algo_alphaBeta_ordering"></label> </li></ul> </li><li class="ai-settings__item">NegaScout <input type="radio" name="check_algo" value="negaScout" id="algo_negaScout"> <label for="algo_negaScout"></label> </li><li class="ai-settings__item"> Depth <div class="ai-settings__select-div"> <select name="depth"> <option value="3">3</option> <option value="4" selected>4</option> <option value="5">5</option> <option value="6">6</option> </select> </div><div class="ai-settings__item-select">4</div><ul class="ai-settings__item-select-list"> <li class="ai-settings__item-select-item" data-value="3">3</li><li class="ai-settings__item-select-item" data-value="4">4</li><li class="ai-settings__item-select-item" data-value="5">5</li><li class="ai-settings__item-select-item" data-value="6">6</li></ul> </div></li><li class="ai-settings__item">Evaluation <ul class="ai-settings__list"> <li class="ai-settings__item"> Material <input type="checkbox" id="check_eval_material" checked> <label for="check_eval_material"></label> </li><li class="ai-settings__item"> Position <input type="checkbox" id="check_eval_position" checked> <label for="check_eval_position"></label> </li></ul> </li></ul>';
 
 					nodes_count_label.textContent = "Nodes checked: ";
 					document.querySelector('.ai-settings__x-mark-menu p').innerHTML = 'Settings';
@@ -376,7 +423,7 @@ var chat = (function(){
 					var data = JSON.parse(this.responseText);
 					var message = data.message !== undefined ? data.message : '';
 					var whose = data.whose;
-					var chatBox = new MessageBox();
+					// var chatBox = new MessageBox();
 
 					chatBox.push(message, whose);
 

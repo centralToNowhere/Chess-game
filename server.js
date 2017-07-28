@@ -118,7 +118,7 @@ http.createServer(function(req, res) {
                 res.end("Not found");
             }
         }
-}).listen(3000);
+}).listen(4000);
 
 
 
@@ -137,6 +137,28 @@ http.createServer(function(req, res) {
 
 // })(), 1000); // 15 min
 scanActiveGame();
+
+function writeDB(gameObject){
+    console.log('writeDB');
+    writeDB.queue = writeDB.queue || [];
+    writeDB.runing = writeDB.runing || false;
+
+    if(typeof gameObject !== 'undefined'){
+        writeDB.queue.push(gameObject);
+    }
+
+    if(!writeDB.runing && writeDB.queue.length !== 0){
+        writeDB.runing = true;
+        var writeStream = fs.createWriteStream(__dirname + DATA);
+        writeStream.write(JSON.stringify(gameObject));
+        writeStream.end(function(){
+            writeDB.queue.shift();
+            writeDB.runing = false;
+            writeDB();
+        });
+    }
+
+}
 
 function scanActiveGame(games_old){
     if(games_old == undefined){
@@ -187,9 +209,10 @@ function deleteGame(save, games_old){
             delete games_old[i];
         }
     }
-
-    var writeStream = fs.createWriteStream(__dirname + DATA);
-    writeStream.write(JSON.stringify(games_old));
+    console.log('here');
+    writeDB(games_old);
+    // var writeStream = fs.createWriteStream(__dirname + DATA);
+    // writeStream.write(JSON.stringify(games_old));
     return games_old;
 }
 
@@ -310,8 +333,9 @@ function auth_validate(data, res){
                         password_player2: password_player2,
                     };
 
-                    var writeStream = fs.createWriteStream(__dirname + DATA);
-                    writeStream.write(JSON.stringify(games));
+                    writeDB(games);
+                    // var writeStream = fs.createWriteStream(__dirname + DATA);
+                    // writeStream.write(JSON.stringify(games));
                     res.end(JSON.stringify(updates1));
                 }
                 readStream.destroy();
@@ -335,6 +359,7 @@ var chat = {
             }
         });
     },
+
     publish: function(data){
         data = JSON.parse(data);
         var to_send = {
@@ -552,8 +577,9 @@ var chess = {
                         }
                         
                         //parsed to data.json
-                        var writeStream = fs.createWriteStream(__dirname + DATA);
-                        writeStream.write(JSON.stringify(parsed));
+                        writeDB(parsed);
+                        // var writeStream = fs.createWriteStream(__dirname + DATA);
+                        // writeStream.write(JSON.stringify(parsed));
                         
                         updates.current_move = current_move;
                         delete updates.password;
@@ -578,7 +604,7 @@ var chess = {
         var url_common = url.parse(req.url);
         var arr = [querystring.parse(url_common.query).name, res];
         this.clients.push(arr);
-        var object = this;
+        console.log(this.clients.length);
         res.on('close', function(){
             for(var i = 0; i < chess.clients.length; i++){
                 if(chess.clients[i][1] === this ){
@@ -589,12 +615,16 @@ var chess = {
         });
     },
 
-    get_moves: function(moves, j, k, object){
+    get_moves: function(moves, j, k, object, side){
+        if(side === undefined){
+            side = object.current_side;
+        }
+        side = object.current_side;
+
         var possible_cells = [];
         var possible_attacks = [];
         var coordinates = [j, k];
         for(var i = 0; i < moves.vectors.length; i++){
-
 
             if(moves.distance === 0){
 
@@ -603,7 +633,7 @@ var chess = {
                         if( object.matrix[j][k] === null){
                             possible_cells.push([j, k]);
                         }else{ // positions for attack
-                            if(  object.matrix[j][k].split('_')[1] !== object.current_side ){
+                            if(  object.matrix[j][k].split('_')[1] !== side ){
                                 possible_attacks.push([j, k]);
                             }
                             break;
@@ -620,7 +650,11 @@ var chess = {
                     j <= coordinates[0] + 1 && k <= coordinates[1] + 1 && j >= coordinates[0] - 1 && k >= coordinates[1] - 1 && 
                     j < 8 && k < 8 && j >= 0 && k >= 0;){
                     if( j !== coordinates[0] || k !== coordinates[1]){
+
+
                         //castling
+
+
                         if(object.matrix[coordinates[0]][coordinates[1]] === 'king_white'){
                             if(object.is_it_a_first_move.king_white){
                                 if('rook1_white' in object.data ){
@@ -628,7 +662,10 @@ var chess = {
                                         if(object.matrix[7][1] === null &&
                                             object.matrix[7][2] === null &&
                                             object.matrix[7][3] === null){
-                                                possible_cells.push([object.data.king_white[0], object.data.king_white[1] - 2, ['castling', object.data.rook1_white[0], object.data.rook1_white[1], object.data.king_white[0], object.data.king_white[1] - 1]]);
+                                                for(var h in this.data){
+
+                                                }
+                                                    possible_cells.push([object.data.king_white[0], object.data.king_white[1] - 2, ['castling', object.data.rook1_white[0], object.data.rook1_white[1], object.data.king_white[0], object.data.king_white[1] - 1]]);
                                         }
                                     }
                                 }
@@ -666,7 +703,7 @@ var chess = {
                         if( object.matrix[j][k] === null ){
                             possible_cells.push([j, k]);
                         }else{ // positions for attack
-                            if(  object.matrix[j][k].split('_')[1] !== object.current_side ){
+                            if(  object.matrix[j][k].split('_')[1] !== side ){
                                 possible_attacks.push([j, k]);
                             }
                             break;
@@ -680,81 +717,93 @@ var chess = {
             }
 
             if(moves.distance === -1 || moves.distance === 2){
-                if(coordinates[0] + moves.vectors[i][0] < 8 && coordinates[1] + moves.vectors[i][1] < 8 && coordinates[1] + moves.vectors[i][1] >= 0 && coordinates[0] + moves.vectors[i][0] >= 0){
-                    if(object.matrix[coordinates[0] +
-                        moves.vectors[i][0]][coordinates[1] +
-                        moves.vectors[i][1]] === null ){
-                        if(object.matrix[coordinates[0]][coordinates[1]].split('_')[0].match(/pawn\d/)){
 
-                            if(i === 1 || i === 2){
-                                continue;
-                            }
-                            if(object.current_side === 'white'){
-                                if(coordinates[0] !== 6){
-                                    if(i === 3){
-                                        continue;                    
-                                    }
-                                    //transform queen
-                                    if(coordinates[0] === 1){
-                                        possible_cells.push([coordinates[0] + moves.vectors[i][0], coordinates[1] + moves.vectors[i][1], ['transform', 'queen_' + object.current_side]]);
-                                        continue;                      
-                                    }
-                                }
-                                possible_cells.push([coordinates[0] + moves.vectors[i][0], coordinates[1] + moves.vectors[i][1]]);                      
-                            }else{         
-                                if(coordinates[0] !== 1){
-                                    if(i === 3){ 
-                                        continue; 
-                                    }
-                                    //transform queen
-                                    if(coordinates[0] === 6){
-                                        possible_cells.push([coordinates[0] + moves.vectors[i][0], coordinates[1] + moves.vectors[i][1], ['transform', 'queen_' + object.current_side]]);
-                                        continue;                      
-                                    }
-                                }
-                                possible_cells.push([coordinates[0] + moves.vectors[i][0], coordinates[1] + moves.vectors[i][1]]);
-                            }
-                        }else{
-                            possible_cells.push([coordinates[0] + moves.vectors[i][0], coordinates[1] + moves.vectors[i][1]]);           
-                        }     
-                    }else{
-                        if(object.matrix[coordinates[0] + moves.vectors[i][0]][coordinates[1] + moves.vectors[i][1]].split('_')[1] !== object.current_side){
+                if(coordinates[0] + moves.vectors[i][0] < 8 && coordinates[1] + moves.vectors[i][1] < 8 && coordinates[1] + moves.vectors[i][1] >= 0 && coordinates[0] + moves.vectors[i][0] >= 0){
+                    // if target cell on board is free for move
+                        if(object.matrix[coordinates[0] +
+                            moves.vectors[i][0]][coordinates[1] +
+                            moves.vectors[i][1]] === null ){ 
                             if(object.matrix[coordinates[0]][coordinates[1]].split('_')[0].match(/pawn\d/)){
-                                if(i === 3 || i === 0){
+                                if(i === 1 || i === 2){
+                                    continue;
+                                }
+                                if(side === 'white'){
+                                    if(coordinates[0] !== 6){
+                                        if(i === 3){
+                                            continue;                    
+                                        }
+
+                                        //transform queen
+
+                                        if(coordinates[0] === 1){
+                                            possible_cells.push([coordinates[0] + moves.vectors[i][0], coordinates[1] + moves.vectors[i][1], ['transform', 'queen_' + side]]);
+                                            continue;                      
+                                        }
+                                    }
+                                    possible_cells.push([coordinates[0] + moves.vectors[i][0], coordinates[1] + moves.vectors[i][1]]);                      
+                                }else{         
+                                    if(coordinates[0] !== 1){
+                                        if(i === 3){ 
+                                            continue; 
+                                        }
+                                        //transform queen
+                                        if(coordinates[0] === 6){
+                                            possible_cells.push([coordinates[0] + moves.vectors[i][0], coordinates[1] + moves.vectors[i][1], ['transform', 'queen_' + side]]);
+                                            continue;                      
+                                        }
+                                    }
+                                    possible_cells.push([coordinates[0] + moves.vectors[i][0], coordinates[1] + moves.vectors[i][1]]);
+                                }
+                            }else{
+                                possible_cells.push([coordinates[0] + moves.vectors[i][0], coordinates[1] + moves.vectors[i][1]]);           
+                            }     
+                        }else{
+                            if(object.matrix[coordinates[0] + moves.vectors[i][0]][coordinates[1] + moves.vectors[i][1]].split('_')[1] !== side){
+                                if(object.matrix[coordinates[0]][coordinates[1]].split('_')[0].match(/pawn\d/)){
+                                    if(i === 3 || i === 0){
+                                        if(i === 0){
+                                            delete moves.vectors[3];
+                                            moves.vectors.length = moves.vectors.length-1;
+                                        }
+                                        continue;                    
+                                    }else{
+                                        if(side === 'white'){
+                                            if(coordinates[0] === 1){
+                                                possible_attacks.push([coordinates[0] + moves.vectors[i][0], coordinates[1] + moves.vectors[i][1], ['transform', 'queen_' + side]]);
+                                                continue;
+                                            }
+                                        }else{
+                                            if(coordinates[0] === 6){
+                                                possible_attacks.push([coordinates[0] + moves.vectors[i][0], coordinates[1] + moves.vectors[i][1], ['transform', 'queen_' + side]]);
+                                                continue;
+                                            }
+                                        }
+                                        possible_attacks.push([coordinates[0] + moves.vectors[i][0], coordinates[1] + moves.vectors[i][1]]);
+                                    }
+                                }else{
+                                    possible_attacks.push([coordinates[0] + moves.vectors[i][0], coordinates[1] + moves.vectors[i][1]]);
+                                }
+                            }else{
+                                if(object.matrix[coordinates[0]][coordinates[1]].split('_')[0].match(/pawn\d/)){
                                     if(i === 0){
                                         delete moves.vectors[3];
                                         moves.vectors.length = moves.vectors.length-1;
                                     }
                                     continue;                    
-                                }else{
-                                    if(object.current_side === 'white'){
-                                        if(coordinates[0] === 1){
-                                            possible_attacks.push([coordinates[0] + moves.vectors[i][0], coordinates[1] + moves.vectors[i][1], ['transform', 'queen_' + object.current_side]]);
-                                            continue;
-                                        }
-                                    }else{
-                                        if(coordinates[0] === 6){
-                                            possible_attacks.push([coordinates[0] + moves.vectors[i][0], coordinates[1] + moves.vectors[i][1], ['transform', 'queen_' + object.current_side]]);
-                                            continue;
-                                        }
-                                    }
-                                    possible_attacks.push([coordinates[0] + moves.vectors[i][0], coordinates[1] + moves.vectors[i][1]]);
                                 }
-                            }else{
-                                possible_attacks.push([coordinates[0] + moves.vectors[i][0], coordinates[1] + moves.vectors[i][1]]);
                             }
-                        }     
-                        //break;    
+                            //break;    
+                        }
                     }
                 }
             }
-        }
-        var moves = {
+            var moves = {
                 possible_cells: possible_cells,
                 possible_attacks: possible_attacks
             };
         return moves;
-    },
+
+        },
     moves: {
 
         king: function(){
