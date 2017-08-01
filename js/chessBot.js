@@ -127,14 +127,19 @@ var ChessBot = (function(){
 			// less valuable atacker / most valuable victim
 			arr_attacks.sort(function(a, b){
 				function cost(move){
-					var name1 = object.matrix[move[0][0]][move[0][1]],
-						name2 = object.matrix[move[1][0]][move[1][1]];
-						type1 = name1.split('_')[0],
-						type2 = name2.split('_')[0],
-						// color1 = name1.split('_')[name1.split('_').length-1],
-						// color2 = name2.split('_')[name2.split('_').length-1],
-						cost1 = that.cost[type1] === undefined ? that.cost[type1.substr(0, type1.length-1)] : that.cost[type1],
-						cost2 = that.cost[type2] === undefined ? that.cost[type2.substr(0, type2.length-1)] : that.cost[type2];
+					try{
+						var name1 = object.matrix[move[0][0]][move[0][1]],
+							name2 = object.matrix[move[1][0]][move[1][1]],
+							type1 = name1.split('_')[0],
+							type2 = name2.split('_')[0],
+							// color1 = name1.split('_')[name1.split('_').length-1],
+							// color2 = name2.split('_')[name2.split('_').length-1],
+							cost1 = that.cost[type1] === undefined ? that.cost[type1.substr(0, type1.length-1)] : that.cost[type1],
+							cost2 = that.cost[type2] === undefined ? that.cost[type2.substr(0, type2.length-1)] : that.cost[type2];
+					}catch(e){
+						debugger;
+					}
+
 
 					return cost2 - cost1;
 				}
@@ -158,40 +163,61 @@ var ChessBot = (function(){
 						}
 						return figure;
 					}
-					var fig_a_type = filter(a);
-					var fig_b_type = filter(b);
-						
-					var fig_a = object.matrix[a[0][0]][a[0][1]];
-					var fig_b = object.matrix[b[0][0]][b[0][1]];
-
-					//make move a
-					object.matrix[a[0][0]][a[0][1]] = null;
-					object.matrix[a[1][0]][a[1][1]] = fig_a;
-					object.data[fig_a] = [a[1][0], a[1][1]];
-					var length_a = object.get_moves(object.moves[fig_a_type](), a[1][0], a[1][1], object).possible_attacks.length;
-					// undo move a
-					object.matrix[a[0][0]][a[0][1]] = fig_a;
-					object.matrix[a[1][0]][a[1][1]] = null;
-					object.data[fig_a] = [a[0][0], a[0][1]];
-
-					// make move b
-					object.matrix[b[0][0]][b[0][1]] = null;
-					object.matrix[b[1][0]][b[1][1]] = fig_b;
-					object.data[fig_b] = [b[1][0], b[1][1]];
-
-					var length_b = object.get_moves(object.moves[fig_b_type](), b[1][0], b[1][1], object).possible_attacks.length;
-					// undo move b
-					object.matrix[b[0][0]][b[0][1]] = fig_b;
-					object.matrix[b[1][0]][b[1][1]] = null;
-					object.data[fig_b] = [b[0][0], b[0][1]];
 
 
-					return length_b - length_a;
+					var getMovesAmount = function(c){
+
+						var type = filter(c),
+							pieceFromMatrix = object.matrix[c[0][0]][c[0][1]],
+							pieceFromData = '',
+							transformed = function findTransformedPieces(){
+
+								if(object.data[pieceFromMatrix] !== [c[0][0], c[0][1]]){
+									for(var h in object.data){
+										if(object.data[h][0] === c[0][0] &&  object.data[h][1] === c[0][1]){
+											return h;
+										}
+									}
+								}else{
+									return false;
+								}
+
+							}(),
+							length = 0;
+
+
+
+						//make virtual move
+						object.matrix[c[0][0]][c[0][1]] = null;
+						object.matrix[c[1][0]][c[1][1]] = pieceFromMatrix;
+						if(transformed){
+							object.data[transformed] = [c[1][0], c[1][1]];
+						}else{
+							object.data[pieceFromMatrix] = [c[1][0], c[1][1]];
+						}
+
+						// get number of attack moves
+						length = object.get_moves(object.moves[type](), c[1][0], c[1][1], object).possible_attacks.length;
+
+						// undo virtual move
+						object.matrix[c[0][0]][c[0][1]] = pieceFromMatrix;
+						object.matrix[c[1][0]][c[1][1]] = null;
+						if(transformed){
+							object.data[transformed] = [c[0][0], c[0][1]];
+						}else{
+							object.data[pieceFromMatrix] = [c[0][0], c[0][1]];
+						}
+
+						return length;
+
+					}
+
+					return getMovesAmount(b) - getMovesAmount(a);
 
 				};
 
 			}()));
-			console.log(arr, arr_attacks);
+
 			return arr_attacks.concat(arr);
 		};
 
@@ -201,7 +227,7 @@ var ChessBot = (function(){
 				sortedArr = [];
 
 			arr.forEach(function(m, index){
-				this.move(m[0][0], m[0][1], m[1][0], m[1][1], '', object);
+				this.move(m[0][0], m[0][1], m[1][0], m[1][1], m[1][2], object);
 				res = this.evaluate({
 					position: true,
 					material: true
@@ -468,11 +494,8 @@ var ChessBot = (function(){
 
 
 					current_depth++;
-					
-					//move without castling/transforming
-					var embeded_move = '';
 
-					this.move(m[0][0], m[0][1], m[1][0], m[1][1], embeded_move, object);
+					this.move(m[0][0], m[0][1], m[1][0], m[1][1], m[1][2], object);
 
 					var parent_node = branch;
 					
@@ -661,7 +684,7 @@ var ChessBot = (function(){
 			object = real; // restore positions object
 			// real move
 			object.AI = false;
-			this.move(tree[tree[-2]][4][0][0], tree[tree[-2]][4][0][1], tree[tree[-2]][4][1][0], tree[tree[-2]][4][1][1], '', object);
+			this.move(tree[tree[-2]][4][0][0], tree[tree[-2]][4][0][1], tree[tree[-2]][4][1][0], tree[tree[-2]][4][1][1], tree[tree[-2]][4][1][2], object);
 			object.current_side = object.ai_side === 'white' ? 'black' : 'white';
 			object.ai_side = '';
 			object.call = 0;
@@ -743,10 +766,7 @@ var ChessBot = (function(){
 
 					current_depth++;
 					
-					//move without castling/transforming
-					var embeded_move = '';
-
-					this.move(m[0][0], m[0][1], m[1][0], m[1][1], embeded_move, object);
+					this.move(m[0][0], m[0][1], m[1][0], m[1][1], m[1][2], object);
 
 					var parent_node = branch;
 					
@@ -901,7 +921,7 @@ var ChessBot = (function(){
 			object = real; // restore positions object
 			// real move
 			object.AI = false;
-			this.move(tree[tree[-2]][4][0][0], tree[tree[-2]][4][0][1], tree[tree[-2]][4][1][0], tree[tree[-2]][4][1][1], '', object);
+			this.move(tree[tree[-2]][4][0][0], tree[tree[-2]][4][0][1], tree[tree[-2]][4][1][0], tree[tree[-2]][4][1][1], tree[tree[-2]][4][1][2], object);
 			object.current_side = object.ai_side === 'white' ? 'black' : 'white';
 			object.ai_side = '';
 			object.call = 0;

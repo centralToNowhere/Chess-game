@@ -30,8 +30,9 @@ var positions = {
 			}
 			if(t !== 'deleted' && t !== 'current_move' && t !== 'current_side' && t !== 'name' && t !== 'password' && t !== 'is_it_a_first_move' && t !== 'game_status' && t !== 'win' && t !== 'check'){
 				if(typeof updates[t] !== 'string'){
+					updates_container.origin_figure = updates_container.origin_figure || {};
 					// stores origin figure to undo later
-					updates_container.origin_figure = this.matrix[t.split('_')[0]][t.split('_')[1]];
+					updates_container.origin_figure[t] = this.matrix[t.split('_')[0]][t.split('_')[1]];
 
 					this.matrix[updates[t][0]][updates[t][1]] = this.matrix[t.split('_')[0]][t.split('_')[1]];
 					
@@ -41,6 +42,9 @@ var positions = {
 
 							// stores wiped figure 
 							updates_container.cut = h;
+							if(h.match(/.+_.+_\d+/)){
+								updates_container.cut = h.split('_')[0] + '_' + h.split('_')[1];
+							}
 
 							this.data[h] = [null, null];
 						}
@@ -57,6 +61,7 @@ var positions = {
 					}
 				}else{
 					this.matrix[t.split('_')[0]][t.split('_')[1]] = updates[t];
+
 					var regex = '^' + updates[t].split('_')[0] + '_' + updates[t].split('_')[1] + '_+\\d$';
 					var regex = new RegExp(regex);
 					for(var i in this.data){
@@ -69,6 +74,9 @@ var positions = {
 		                }else{
 		                	this.data[updates[t] + '_1'] = [t.split('_')[0] - 0, t.split('_')[1] - 0];
 		                	updates_container.transform = updates[t] + '_1';
+		                }
+		                if(i !== updates[t] && this.data[i][0] === t.split('_')[0] && this.data[i][1] === t.split('_')[1]){
+		                	delete this.data[i]; 
 		                }
 		            }
 				}
@@ -243,19 +251,16 @@ var positions = {
 
 								if(object.matrix[coordinates[0]][coordinates[1]] === 'king_white'){
 									if(object.is_it_a_first_move.king_white){
-										if('rook1_white' in object.data ){
+										if('rook1_white' in object.data  && object.data['rook1_white'][0] !== null){
 											if(object.is_it_a_first_move.rook1_white){
 												if(object.matrix[7][1] === null &&
 													object.matrix[7][2] === null &&
 													object.matrix[7][3] === null){
-														for(var h in this.data){
-
-														}
-															possible_cells.push([object.data.king_white[0], object.data.king_white[1] - 2, ['castling', object.data.rook1_white[0], object.data.rook1_white[1], object.data.king_white[0], object.data.king_white[1] - 1]]);
+														possible_cells.push([object.data.king_white[0], object.data.king_white[1] - 2, ['castling', object.data.rook1_white[0], object.data.rook1_white[1], object.data.king_white[0], object.data.king_white[1] - 1]]);
 												}
 											}
 										}
-										if('rook2_white' in object.data ){
+										if('rook2_white' in object.data && object.data['rook2_white'][0] !== null){
 											if(object.is_it_a_first_move.rook2_white){
 												if(object.matrix[7][5] === null &&
 													object.matrix[7][6] === null){
@@ -267,7 +272,7 @@ var positions = {
 								}
 								if(object.matrix[coordinates[0]][coordinates[1]] === 'king_black'){
 									if(object.is_it_a_first_move.king_black){
-										if('rook1_black' in object.data ){
+										if('rook1_black' in object.data && object.data['rook1_black'][0] !== null){
 											if(object.is_it_a_first_move.rook1_black){
 												if(object.matrix[0][1] === null &&
 													object.matrix[0][2] === null &&
@@ -276,7 +281,7 @@ var positions = {
 												}
 											}
 										}
-										if('rook2_black' in object.data ){
+										if('rook2_black' in object.data && object.data['rook2_black'][0] !== null ){
 											if(object.is_it_a_first_move.rook2_black){
 												if(object.matrix[0][5] === null &&
 													object.matrix[0][6] === null){
@@ -871,7 +876,7 @@ var positions = {
 
 			undo:function(){
 				var last_update = this.moves_stack.pop();
-
+				debugger;
 				for(var t in last_update.updates){
 					if(t === 'game_status'){
 						if(last_update.game_status !== undefined){
@@ -883,9 +888,30 @@ var positions = {
 					}
 					if(t !== 'deleted' && t !== 'current_move' && t !== 'current_side' && t !== 'name' && t !== 'password' && t !== 'is_it_a_first_move' && t !== 'game_status' && t !== 'win' && t !== 'check'){
 						if(typeof last_update.updates[t] !== 'string'){
+							var origin = last_update.origin_figure[t],
+								m = last_update.updates[t],
+								dataOrigin = function findTransformedPieces(){
+
+								if(object.data[origin] !== [m[0], m[1]]){
+									for(var h in object.data){
+										if(object.data[h][0] === m[0] &&  object.data[h][1] === m[1]){
+											return h;
+										}
+									}
+								}else{
+									return false;
+								}
+
+							}();
+
 							// stores origin figure to undo later
-							this.matrix[t.split('_')[0]][t.split('_')[1]] = last_update.origin_figure;
-							this.data[last_update.origin_figure] = [t.split('_')[0] - 0, t.split('_')[1] - 0];
+							this.matrix[t.split('_')[0]][t.split('_')[1]] = origin;
+							if(dataOrigin){
+								this.data[dataOrigin] = [t.split('_')[0] - 0, t.split('_')[1] - 0];
+							}else{
+								this.data[origin] = [t.split('_')[0] - 0, t.split('_')[1] - 0];
+							}
+
 							if(last_update.cut !== undefined){
 								this.matrix[last_update.updates[t][0]][last_update.updates[t][1]] = last_update.cut;
 								this.data[last_update.cut] = [last_update.updates[t][0] - 0, last_update.updates[t][1] - 0];
@@ -893,7 +919,7 @@ var positions = {
 								this.matrix[last_update.updates[t][0]][last_update.updates[t][1]] = null;
 							}
 						}else{
-							if(last_update.transfrom !== undefined){
+							if(last_update.transform !== undefined){
 								delete this.data[last_update.transform];
 							}
 						}
