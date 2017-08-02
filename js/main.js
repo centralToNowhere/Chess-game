@@ -3,6 +3,7 @@ var positions = {
 	//set_updates calls
 	call: 0,
 	set_updates: function(updates){
+		debugger;
 		var updates_container = {};
 		updates_container.updates  = updates;
 
@@ -38,6 +39,8 @@ var positions = {
 					
 					var transformed_figure_found = false;
 					for(var h in this.data){
+
+						// if cut transform piece 
 						if(this.data[h][0] === updates[t][0] && this.data[h][1] === updates[t][1]){				
 
 							// stores wiped figure 
@@ -48,6 +51,8 @@ var positions = {
 
 							this.data[h] = [null, null];
 						}
+
+						// transform piece move 
 						if(h.match(/.+_.+_\d+/)){
 							if(this.data[h][0] === t.split('_')[0] - 0 && this.data[h][1] === t.split('_')[1] - 0){
 								this.data[h] = updates[t];
@@ -64,20 +69,45 @@ var positions = {
 
 					var regex = '^' + updates[t].split('_')[0] + '_' + updates[t].split('_')[1] + '_+\\d$';
 					var regex = new RegExp(regex);
+					var trigger = false;
 					for(var i in this.data){
 		                if(i.match(regex)){
+		                	trigger = true;
 		                    var num = i.split('_')[2] - 0; // to number
 		                    var color = i.split('_')[1];
 		                    this.data[updates[t].split('_')[0] + '_' + color + '_' + ++num] = [t.split('_')[0] - 0, t.split('_')[1] - 0];
+
 		                    // store transform figure to delete it if undo
 		                    updates_container.transform = updates[t].split('_')[0] + '_' + color + '_' + ++num;
-		                }else{
-		                	this.data[updates[t] + '_1'] = [t.split('_')[0] - 0, t.split('_')[1] - 0];
-		                	updates_container.transform = updates[t] + '_1';
+		                    
+		                    //delete pawn from spot
+		                    for(var h in this.data){
+		                    	if(this.data[h][0] === t.split('_')[0] - 0 && this.data[h][1] === t.split('_')[1] - 0 && h !== updates_container.transform){
+		                    		this.data[h] = [null, null];
+		                    	}
+		                    }
+
 		                }
+
 		                if(i !== updates[t] && this.data[i][0] === t.split('_')[0] && this.data[i][1] === t.split('_')[1]){
 		                	delete this.data[i]; 
 		                }
+
+		            }
+		            if(trigger === false){
+
+	                	this.data[updates[t] + '_1'] = [t.split('_')[0] - 0, t.split('_')[1] - 0];
+
+	                	updates_container.transform = updates[t] + '_1';
+
+	                	//delete pawn from spot
+	                	for(var h in this.data){
+	                		if(this.data[h][0] === t.split('_')[0] - 0 && this.data[h][1] === t.split('_')[1] - 0 && h !== updates_container.transform){
+	                			this.data[h] = [null, null];
+	                		}
+	                	}
+	                	
+
 		            }
 				}
 			}

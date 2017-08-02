@@ -172,7 +172,7 @@ var ChessBot = (function(){
 							pieceFromData = '',
 							transformed = function findTransformedPieces(){
 
-								if(object.data[pieceFromMatrix] !== [c[0][0], c[0][1]]){
+								if(object.data[pieceFromMatrix][0] !== c[0][0] && object.data[pieceFromMatrix][1] !== c[0][1]){
 									for(var h in object.data){
 										if(object.data[h][0] === c[0][0] &&  object.data[h][1] === c[0][1]){
 											return h;
