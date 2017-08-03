@@ -13,6 +13,7 @@ var positions = {
 
 		this.call++;		
 		// output count of moves was done in html element (positions.ai_nodes_checked_elem)
+		debugger;
 		this.tools().ai_output_nodes_checked();
 
 		for(var t in updates){
@@ -45,9 +46,6 @@ var positions = {
 
 							// stores wiped figure 
 							updates_container.cut = h;
-							if(h.match(/.+_.+_\d+/)){
-								updates_container.cut = h.split('_')[0] + '_' + h.split('_')[1];
-							}
 
 							this.data[h] = [null, null];
 						}
@@ -922,7 +920,7 @@ var positions = {
 								m = last_update.updates[t],
 								dataOrigin = function findTransformedPieces(){
 
-								if(object.data[origin] !== [m[0], m[1]]){
+								if(object.data[origin][0] !== m[0] || object.data[origin][1] !== m[1]){
 									for(var h in object.data){
 										if(object.data[h][0] === m[0] &&  object.data[h][1] === m[1]){
 											return h;
@@ -943,7 +941,12 @@ var positions = {
 							}
 
 							if(last_update.cut !== undefined){
-								this.matrix[last_update.updates[t][0]][last_update.updates[t][1]] = last_update.cut;
+								if(last_update.cut.match(/^.+_.+_\d+/)){
+									this.matrix[last_update.updates[t][0]][last_update.updates[t][1]] = last_update.cut.split('_')[0] + '_' + last_update.cut.split('_')[1];
+								}else{
+									this.matrix[last_update.updates[t][0]][last_update.updates[t][1]] = last_update.cut;
+								}
+
 								this.data[last_update.cut] = [last_update.updates[t][0] - 0, last_update.updates[t][1] - 0];
 							}else{
 								this.matrix[last_update.updates[t][0]][last_update.updates[t][1]] = null;
@@ -981,7 +984,7 @@ var positions = {
 		    	if(this.call <= 1 || !this.ai_nodes_checked_elem){
 		    		return 0;
 		    	}
-		    	this.ai_nodes_checked_elem.innerText = '' + this.call;
+    			this.ai_nodes_checked_elem.innerText = '' + this.call;
 		    }.bind(object),
 		}
 		return tools;
