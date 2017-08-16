@@ -171,69 +171,8 @@
 				loadScript('js/chessBot.js', function(){
 					
 					//AI init
-					var bot = new ChessBot(positions);
-
-					document.body.addEventListener('AI_turn', function(){
-						bot.set_side(positions.current_side);
-						positions.ai_side = positions.current_side;
-						var algorithm = document.querySelector('input[name="check_algo"]:checked').value;
-						switch(algorithm){
-
-							case 'minimax':
-								bot.alphaBeta((function(){
-									var obj = {
-
-										pruning: false,
-										ordering: true,
-										depth: +document.getElementsByName('depth')[0].value,
-										eval: {
-											material: document.querySelector('#check_eval_material').checked,
-											position: document.querySelector('#check_eval_position').checked,
-										},
-										output: document.querySelector('.container__ai-output'),
-
-									}; 
-									return obj;
-								}()));
-								break;
-
-							case 'alphaBeta':
-								bot.alphaBeta((function(){
-									var obj = {
-
-										pruning: true,
-										ordering: document.querySelector('#algo_alphaBeta_ordering').checked,
-										depth: +document.getElementsByName('depth')[0].value,
-										eval: {
-											material: document.querySelector('#check_eval_material').checked,
-											position: document.querySelector('#check_eval_position').checked,
-										},
-										output: document.querySelector('.container__ai-output'),
-
-									}; 
-									return obj;
-								}()));
-								break;
-
-							case 'negaScout':
-								bot.negascout((function(){
-									var obj = {
-
-										depth: +document.getElementsByName('depth')[0].value,
-										eval: {
-											material: document.querySelector('#check_eval_material').checked,
-											position: document.querySelector('#check_eval_position').checked,
-										},
-										output: document.querySelector('.container__ai-output'),
-
-									}; 
-									return obj;
-								}()));
-								break;
-
-						}
-						
-					});
+					var bot = new ChessBot(positions),
+						workerInProgress = false;
 
 					// creates ui for AI
 					var board = document.querySelector('.board-container'),
@@ -258,7 +197,7 @@
 					ai_settings.appendChild(ai_settings_content); 
 					ai_settings_content.outerHTML = '<ul class="ai-settings__list">Search algorithm <li class="ai-settings__item">Minimax <input type="radio" name="check_algo" value="minimax" id="algo_minimax"> <label for="algo_minimax"></label> </li><li class="ai-settings__item">Alpha-Beta <input type="radio" name="check_algo" value="alphaBeta" id="algo_alphaBeta" checked> <label for="algo_alphaBeta"></label> <ul class="ai-settings__list"> <li class="ai-settings__item">Ordering <input type="checkbox" id="algo_alphaBeta_ordering" checked> <label for="algo_alphaBeta_ordering"></label> </li></ul> </li><li class="ai-settings__item">NegaScout <input type="radio" name="check_algo" value="negaScout" id="algo_negaScout"> <label for="algo_negaScout"></label> </li><li class="ai-settings__item"> Depth <div class="ai-settings__select-div"> <select name="depth"> <option value="3">3</option> <option value="4" selected>4</option> <option value="5">5</option> <option value="6">6</option> </select> </div><div class="ai-settings__item-select">4</div><ul class="ai-settings__item-select-list"> <li class="ai-settings__item-select-item" data-value="3">3</li><li class="ai-settings__item-select-item" data-value="4">4</li><li class="ai-settings__item-select-item" data-value="5">5</li><li class="ai-settings__item-select-item" data-value="6">6</li></ul> </div></li><li class="ai-settings__item">Evaluation <ul class="ai-settings__list"> <li class="ai-settings__item"> Material <input type="checkbox" id="check_eval_material" checked> <label for="check_eval_material"></label> </li><li class="ai-settings__item"> Position <input type="checkbox" id="check_eval_position" checked> <label for="check_eval_position"></label> </li></ul> </li></ul>';
 
-					nodes_count_label.textContent = "Nodes checked: ";
+					nodes_count_label.textContent = "Checked nodes: ";
 					document.querySelector('.ai-settings__x-mark-menu p').innerHTML = 'Settings';
 
 					icon_menu.appendChild(undo_arrow);
@@ -268,53 +207,246 @@
 					icon_menu.appendChild(nodes_checked);
 
 					console.log('ChessBot loaded');
+
+					document.body.addEventListener('AI_turn', function(){
+
+						var obj = {},
+							// bot = {},
+							algorithm = document.querySelector('input[name="check_algo"]:checked').value;
+
+						// if(window.Worker){
+						// 	var clone = function(obj) {
+						//         if (obj instanceof Array) {
+						//             var out = [];
+						//             for (var i = 0, len = obj.length; i < len; i++) {
+						//                 var value = obj[i];
+						//                 out[i] = (value !== null && typeof value === "object") ? clone(value) : value;
+						//             }
+						//         } else {
+						//             var out = {};
+						//             for (var key in obj) {
+						//                 if (obj.hasOwnProperty(key)) {
+						//                     var value = obj[key];
+						//                     out[key] = (value !== null && typeof value === "object") ? clone(value) : value;
+						//                 }
+						//             }
+						//         }
+						//       	return out;
+	   		// 				}
+	   		// 				var positionsCopy = clone(positions);
+	   		// 				bot = new ChessBot(positionsCopy);
+						// }else{
+						// 	bot = new ChessBot(positions);
+						// }
+						bot.set_side(positions.current_side);
+						positions.ai_side = positions.current_side;
+
+						switch(algorithm){
+							case 'minimax':
+								obj = {
+									pruning: false,
+									ordering: true,
+									depth: +document.getElementsByName('depth')[0].value,
+									eval: {
+										material: document.querySelector('#check_eval_material').checked,
+										position: document.querySelector('#check_eval_position').checked,
+									},
+									output: document.querySelector('.container__ai-output'),
+								};
+								break;
+							case 'alphaBeta':
+								obj = {
+									pruning: true,
+									ordering: document.querySelector('#algo_alphaBeta_ordering').checked,
+									depth: +document.getElementsByName('depth')[0].value,
+									eval: {
+										material: document.querySelector('#check_eval_material').checked,
+										position: document.querySelector('#check_eval_position').checked,
+									},
+									output: document.querySelector('.container__ai-output'),
+								};
+								break;
+							case 'negaScout':
+								obj = {
+
+									depth: +document.getElementsByName('depth')[0].value,
+									eval: {
+										material: document.querySelector('#check_eval_material').checked,
+										position: document.querySelector('#check_eval_position').checked,
+									},
+									output: document.querySelector('.container__ai-output'),
+
+								};
+								break;
+						}
+
+						var execAlgorithm = function(bot, algorithm, obj){
+							switch(algorithm){
+
+								case 'minimax':
+									bot.alphaBeta(obj);
+									break;
+
+								case 'alphaBeta':
+									bot.alphaBeta(obj);
+									break;
+
+								case 'negaScout':
+									bot.negascout(obj);
+									break;
+
+							}
+							return;
+						}.bind(undefined, bot, algorithm, obj);
+
+						if(window.Worker){
+
+							var worker = new Worker('js/worker.js');
+
+							worker.addEventListener('message', function(e){
+								var subject = e.data.shift();
+
+								// message about main.js object
+								if(subject === 'positions'){
+									var property = e.data.shift();
+									if(property === 'execute_move'){
+										e.data.push(positions);
+										positions[property].apply(positions, e.data)();
+
+									}else if(typeof positions[property] === 'function'){
+										positions[property].apply(positions, e.data);
+
+									}else{
+										positions[property] = e.data[0];
+									}
+									return;
+								}
+
+								// message about worker status 
+								if(subject === 'status'){
+									var property = e.data.shift();
+									if(property === 'finished'){
+										workerInProgress = false;
+										forward_arrow.classList.remove('active');
+										document.dispatchEvent(new Event('workerReady'));
+									}
+									return this.terminate();
+								}
+
+								// message for GUI 
+								if(subject === 'guiUpdate'){
+									var property = e.data.shift();
+									if(property === 'node'){
+										positions.tools().ai_output_nodes_checked(e.data[0]);
+									}
+								}
+
+							});
+							var partialCopy = {},
+								deletePositionsMethods = function(object){
+									var copy = {},
+										props = ['call', 'data', 'matrix', 'is_it_a_first_move', 'password', 'move_status', 'current_side', 'current_move', 'name', 'game_status', 'win', 'check', 'game_mode', 'ai_side', 'AI', 'moves_stack'];
+										
+									props.forEach(function(p){
+										copy[p] = object[p];
+									});
+
+									return copy;
+								};
+								
+							partialCopy = deletePositionsMethods(positions); 
+							workerInProgress = true;
+							worker.postMessage([partialCopy, algorithm, obj]);
+						}else{
+							execAlgorithm();
+						}
+						
+					});
+
+
 					var undo_func = function(e){
 						this.classList.add('active');
 						var that = this;
 						e.stopPropagation();
-						setTimeout(function(){
-							try{
+						if(window.Worker && workerInProgress){
+							return;
+						}else{
+							setTimeout(function(){
 								positions.tools().undo();
-							}catch(e){
+								positions.render();
+								that.classList.remove('active');
+							}, 0);
+						}
 
-							}
-							positions.render();
-							that.classList.remove('active');
-						}, 0);
 					};
-					undo_arrow.addEventListener('click', undo_func);
 					var forward_func = function(e){
 						this.classList.add('active');
 						var that = this;
 						e.stopPropagation();
-						setTimeout(function(){
+						if(window.Worker && !workerInProgress){
 							positions.tools().ai_move();
-							that.classList.remove('active');
-						}, 0);
+						}else if(workerInProgress){
+							return;
+						}else{
+							setTimeout(function(){
+								positions.tools().ai_move();
+								that.classList.remove('active');
+							}, 0);
+						}
 					};
-					forward_arrow.addEventListener('click', forward_func);
-					autoplay.addEventListener('click', function(e){
+
+					var workerCircle = function(){
+						positions.tools().ai_move();
+					};
+
+					var autoplay_func =	function(e){
 						e.stopPropagation();
 						this.classList.toggle('active');
-						if(this.classList.contains('active')){
-							undo_arrow.removeEventListener('click', undo_func);
-							forward_arrow.removeEventListener('click', forward_func);
-						}else{
-							undo_arrow.addEventListener('click', undo_func);
-							forward_arrow.addEventListener('click', forward_func);
-						}
-						var that = this;
+
 						var circle = function(){
-							if(!that.classList.contains('active')){
-								return 0;
-							}
 							positions.tools().ai_move();
 							setTimeout(circle, 0);
 						};
-						setTimeout(function(){
-							circle();
-						}, 0);
-					});
+
+						if(this.classList.contains('active')){
+							undo_arrow.removeEventListener('click', undo_func);
+							forward_arrow.removeEventListener('click', forward_func);
+
+							if(window.Worker){
+								
+								document.addEventListener('workerReady', workerCircle);
+
+								if(!workerInProgress){
+									workerCircle();
+								}
+
+							}else{
+
+								setTimeout(function(){
+									circle();
+								}, 0);
+							}
+
+						}else{
+							if(window.Worker){
+								debugger;
+								setTimeout(function(){
+									document.removeEventListener('workerReady', workerCircle);
+								}, 0);
+								
+							}
+							undo_arrow.addEventListener('click', undo_func);
+							forward_arrow.addEventListener('click', forward_func);
+
+						}
+
+					};
+
+					/// move/undo/AIvsAI control 
+					undo_arrow.addEventListener('click', undo_func);
+					forward_arrow.addEventListener('click', forward_func);
+					autoplay.addEventListener('click', autoplay_func);
+
 
 					/// show board
 					document.querySelector('.container-fluid ').style.display = 'block';

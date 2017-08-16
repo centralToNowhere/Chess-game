@@ -3,7 +3,6 @@ var positions = {
 	//set_updates calls
 	call: 0,
 	set_updates: function(updates){
-		debugger;
 		var updates_container = {};
 		updates_container.updates  = updates;
 
@@ -13,7 +12,6 @@ var positions = {
 
 		this.call++;		
 		// output count of moves was done in html element (positions.ai_nodes_checked_elem)
-		debugger;
 		this.tools().ai_output_nodes_checked();
 
 		for(var t in updates){
@@ -759,7 +757,6 @@ var positions = {
 				    };
 				}
 				var fn = this.tools().moves_intersection.curry(moves_for_delete);
-				debugger;		
 				var king = this.data['king_' + this.current_side];
 				var king_nearist_cells = [[king[0] + 1, king[1] + 1],
 										[king[0] - 1, king[1] - 1],
@@ -903,8 +900,13 @@ var positions = {
 			}.bind(object),
 
 			undo:function(){
-				var last_update = this.moves_stack.pop();
-				debugger;
+				var last_update = this.moves_stack.length !== 0 ? this.moves_stack.pop() : null;
+
+				// if no moves was done yet
+				if(last_update === null){
+					return;
+				}
+
 				for(var t in last_update.updates){
 					if(t === 'game_status'){
 						if(last_update.game_status !== undefined){
@@ -972,19 +974,20 @@ var positions = {
 				}
 			}.bind(object),
 		    ai_move: function(){
-		    	var event = new Event("AI_turn", {
+		    	var e = new Event("AI_turn", {
 					cancelable: true,
 				});
-				document.body.dispatchEvent(event);
+				document.body.dispatchEvent(e);
 		    },
 		    set_output_nodes_checked: function(elem){
 		    	this.ai_nodes_checked_elem = elem;
 		    }.bind(object),
-		    ai_output_nodes_checked: function(){
-		    	if(this.call <= 1 || !this.ai_nodes_checked_elem){
+		    ai_output_nodes_checked: function(call){
+		    	var call = call || this.call;
+		    	if(call <= 1 || !this.ai_nodes_checked_elem){
 		    		return 0;
 		    	}
-    			this.ai_nodes_checked_elem.innerText = '' + this.call;
+    			this.ai_nodes_checked_elem.innerText = '' + call;
 		    }.bind(object),
 		}
 		return tools;
@@ -1084,8 +1087,9 @@ var positions = {
 
 
 	board_cells: (function(){
-
-		return document.querySelectorAll('.board__cell');
+		if(typeof document !== 'undefined'){
+			return document.querySelectorAll('.board__cell');
+		}
 
 	})(),
 

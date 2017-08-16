@@ -34,6 +34,7 @@ var ChessBot = (function(){
 	*/
 
 	return function(object){
+		debugger;
 		var depth = 4;
 		var current_depth = 1;
 		var side = object.current_side === 'white' ? 'black' : 'white';
@@ -49,12 +50,14 @@ var ChessBot = (function(){
 		};
 
 		this.all_moves_side_func = function(side){
+
 			return object.all_moves_side(side);
+
 		};
 
-		this.move = function(start_j, start_k, finish_j, finish_k, embeded_move, object, call){
+		this.move = function(start_j, start_k, finish_j, finish_k, embeded_move, object){
 
-			object.execute_move(start_j, start_k, finish_j, finish_k, embeded_move, object, call)();
+			object.execute_move(start_j, start_k, finish_j, finish_k, embeded_move, object)();
 
 			return 0;
 		};
@@ -74,6 +77,31 @@ var ChessBot = (function(){
 			side = new_side;
 		};
 
+		this.throttlePostNodesCheckedAmount = function(){
+			var calls = 0,
+				tmp = 0,
+				postNodes = function(){
+					self.postMessage(['guiUpdate', 'node', object.call]);
+				},
+				throttle = function(fn, isLast){
+
+					// last tick - show all amount of remainng nodes 
+					if(isLast === true){
+						fn.apply(self);
+						return;
+					}
+
+					if(calls >= tmp){
+						tmp = 1.7070* Math.pow(calls, 0.9673);
+						fn.apply(self);
+					}
+					calls++;
+
+				}.bind(undefined, postNodes);
+
+			return throttle;
+		};
+
 		this.pruning = function(branch){
 
 			if(branch[-1][3] === 'alpha'){
@@ -91,7 +119,6 @@ var ChessBot = (function(){
 		};
 
 		this.ordering  = function(arr){
-			debugger;
 			var i = 0;
 			var count = arr.length;
 			var that = this;
@@ -127,18 +154,15 @@ var ChessBot = (function(){
 			// less valuable atacker / most valuable victim
 			arr_attacks.sort(function(a, b){
 				function cost(move){
-					try{
-						var name1 = object.matrix[move[0][0]][move[0][1]],
-							name2 = object.matrix[move[1][0]][move[1][1]],
-							type1 = name1.split('_')[0],
-							type2 = name2.split('_')[0],
-							// color1 = name1.split('_')[name1.split('_').length-1],
-							// color2 = name2.split('_')[name2.split('_').length-1],
-							cost1 = that.cost[type1] === undefined ? that.cost[type1.substr(0, type1.length-1)] : that.cost[type1],
-							cost2 = that.cost[type2] === undefined ? that.cost[type2.substr(0, type2.length-1)] : that.cost[type2];
-					}catch(e){
-						debugger;
-					}
+					var name1 = object.matrix[move[0][0]][move[0][1]],
+						name2 = object.matrix[move[1][0]][move[1][1]],
+						type1 = name1.split('_')[0],
+						type2 = name2.split('_')[0],
+						// color1 = name1.split('_')[name1.split('_').length-1],
+						// color2 = name2.split('_')[name2.split('_').length-1],
+						cost1 = that.cost[type1] === undefined ? that.cost[type1.substr(0, type1.length-1)] : that.cost[type1],
+						cost2 = that.cost[type2] === undefined ? that.cost[type2.substr(0, type2.length-1)] : that.cost[type2];
+
 
 
 					return cost2 - cost1;
@@ -424,6 +448,12 @@ var ChessBot = (function(){
 			object.AI = true;
 			var real = object;
 			object = this.cloner.clone(object);
+			var postNodes;
+
+			// set throttle for posting amount of checked nodes to main thread
+			if(self.isWorker){
+				postNodes = this.throttlePostNodesCheckedAmount();
+			}
 
 			//DOM element is not copied???
 			object.ai_nodes_checked_elem = real.ai_nodes_checked_elem;
@@ -449,8 +479,6 @@ var ChessBot = (function(){
 
 			//build nodes (branch  - child nodes) 
 			var half_move = function half_move(research_id){
-
-				debugger;
 
 				object.current_move = 'true';
 
@@ -492,8 +520,11 @@ var ChessBot = (function(){
 						search_window = 1;
 					}
 
-
 					current_depth++;
+
+					if(self.isWorker){
+						postNodes();
+					}
 
 					this.move(m[0][0], m[0][1], m[1][0], m[1][1], m[1][2], object);
 
@@ -543,7 +574,6 @@ var ChessBot = (function(){
 								//re-search
 								if(i !== 0 &&  res > branch[0][1] && res < branch[0][2]){
 
-									debugger;
 									// delete child node
 									branch[1][i] = null;
 
@@ -586,7 +616,6 @@ var ChessBot = (function(){
 								//re-search
 								if(i !== 0 && res > branch[0][1] && res < branch[0][2]){
 
-									debugger;
 									// delete child node
 									branch[1][i] = null;
 
@@ -683,11 +712,26 @@ var ChessBot = (function(){
 
 			object = real; // restore positions object
 			// real move
-			object.AI = false;
-			this.move(tree[tree[-2]][4][0][0], tree[tree[-2]][4][0][1], tree[tree[-2]][4][1][0], tree[tree[-2]][4][1][1], tree[tree[-2]][4][1][2], object);
-			object.current_side = object.ai_side === 'white' ? 'black' : 'white';
-			object.ai_side = '';
-			object.call = 0;
+			if(self.isWorker){
+				self.postMessage(['positions', 'AI', false]);
+				self.postMessage(['positions', 'execute_move', tree[tree[-2]][4][0][0], tree[tree[-2]][4][0][1], tree[tree[-2]][4][1][0], tree[tree[-2]][4][1][1], tree[tree[-2]][4][1][2]]);
+				object.current_side = object.ai_side === 'white' ? 'black' : 'white';
+				self.postMessage(['positions', 'current_side', object.current_side]);
+				self.postMessage(['positions', 'ai_side', '']);
+
+				// show remaining nodes amount on last tick
+				postNodes(true);
+
+				self.postMessage(['positions', 'call', 0]);
+				self.postMessage(['status', 'finished']);
+			}else{
+				object.AI = false;
+				this.move(tree[tree[-2]][4][0][0], tree[tree[-2]][4][0][1], tree[tree[-2]][4][1][0], tree[tree[-2]][4][1][1], tree[tree[-2]][4][1][2], object);
+				object.current_side = object.ai_side === 'white' ? 'black' : 'white';
+				object.ai_side = '';
+				object.call = 0;
+			}
+
 			
 			return tree[tree[-2]][4];
 		};
@@ -698,7 +742,6 @@ var ChessBot = (function(){
 		returns 			- array of move, for example [[2, 1], [3, 1]]
 		*/
 		this.alphaBeta = function(ai_settings){
-			debugger;
 			// init settings
 			if(ai_settings && ai_settings.depth){
 				this.set_depth(ai_settings.depth);
@@ -713,6 +756,12 @@ var ChessBot = (function(){
 			object.AI = true;
 			var real = object;
 			object = this.cloner.clone(object);
+			var postNodes;
+
+			// set throttle for posting amount of checked nodes to main thread
+			if(self.isWorker){
+				postNodes = this.throttlePostNodesCheckedAmount();
+			}
 
 			//DOM element is not copied???
 			object.ai_nodes_checked_elem = real.ai_nodes_checked_elem;
@@ -765,6 +814,10 @@ var ChessBot = (function(){
 					values = node === 'alpha' ? [Number.NEGATIVE_INFINITY, branch[-1][0][1], branch[-1][0][2]] : [Number.POSITIVE_INFINITY, branch[-1][0][1], branch[-1][0][2]];	
 
 					current_depth++;
+
+					if(self.isWorker){
+						postNodes();
+					}
 					
 					this.move(m[0][0], m[0][1], m[1][0], m[1][1], m[1][2], object);
 
@@ -916,15 +969,30 @@ var ChessBot = (function(){
 					}
 				}
 			}.apply(this);
+			debugger;
 			real.call = object.call;
 
 			object = real; // restore positions object
 			// real move
-			object.AI = false;
-			this.move(tree[tree[-2]][4][0][0], tree[tree[-2]][4][0][1], tree[tree[-2]][4][1][0], tree[tree[-2]][4][1][1], tree[tree[-2]][4][1][2], object);
-			object.current_side = object.ai_side === 'white' ? 'black' : 'white';
-			object.ai_side = '';
-			object.call = 0;
+			if(self.isWorker){
+				self.postMessage(['positions', 'AI', false]);
+				self.postMessage(['positions', 'execute_move', tree[tree[-2]][4][0][0], tree[tree[-2]][4][0][1], tree[tree[-2]][4][1][0], tree[tree[-2]][4][1][1], tree[tree[-2]][4][1][2]]);
+				object.current_side = object.ai_side === 'white' ? 'black' : 'white';
+				self.postMessage(['positions', 'current_side', object.current_side]);
+				self.postMessage(['positions', 'ai_side', '']);
+
+				// show remaining nodes amount on last tick
+				postNodes(true);
+				
+				self.postMessage(['positions', 'call', 0]);
+				self.postMessage(['status', 'finished']);
+			}else{
+				object.AI = false;
+				this.move(tree[tree[-2]][4][0][0], tree[tree[-2]][4][0][1], tree[tree[-2]][4][1][0], tree[tree[-2]][4][1][1], tree[tree[-2]][4][1][2], object);
+				object.current_side = object.ai_side === 'white' ? 'black' : 'white';
+				object.ai_side = '';
+				object.call = 0;
+			}
 			
 			return tree[tree[-2]][4];
 		};
