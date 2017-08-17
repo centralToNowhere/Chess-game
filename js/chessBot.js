@@ -81,7 +81,7 @@ var ChessBot = (function(){
 			var calls = 0,
 				tmp = 0,
 				postNodes = function(){
-					self.postMessage(['guiUpdate', 'node', object.call]);
+					self.postMessage(['guiUpdate', 'nodes', object.call]);
 				},
 				throttle = function(fn, isLast){
 
@@ -466,7 +466,8 @@ var ChessBot = (function(){
 				1:{}, // link to all child objects, -1 - link to self object, -2 - child node id that leads to the best move
 				2:0, // link to parent object
 				3:'alpha', // alpha or beta node
-				4:[] // array of move to reach this node
+				4:[], // array of move to reach this node
+				6:1 // fraction to show calculating progress
 			};
 
 			initial_node[1][-1] = initial_node; // link to self object
@@ -490,6 +491,9 @@ var ChessBot = (function(){
 
 				for(var i = 0; i < arr.length; i++){
 
+					// fraction = parent fraction / arr.length
+					var fraction = branch[-1][6] / arr.length;
+
 					if(typeof research_id !== 'undefined' && i !== research_id){
 						continue;
 					}
@@ -497,8 +501,8 @@ var ChessBot = (function(){
 					// move coordinates
 					var m = arr[i];
 
-
 					if(this.pruning(branch) === 0){
+						self.postMessage(['guiUpdate', 'progressBar', (arr.length - i) * fraction]);
 						break;
 					};
 
@@ -536,7 +540,8 @@ var ChessBot = (function(){
 						2:parent_node, // link to parent object
 						3:node, // alpha or beta node
 						4:m, // array of move to reach this node
-						5:search_window // search window, 0 - null window, 1 - full search
+						5:search_window, // search window, 0 - null window, 1 - full search
+						6:fraction 
 					};
 
 					branch[i][1][-1] = branch[i]; // property that point to parent of same level nodes array
@@ -688,6 +693,13 @@ var ChessBot = (function(){
 							}
 						}
 
+
+						// update progressBar
+						if(self.isWorker){
+							self.postMessage(['guiUpdate', 'progressBar', tmp_branch[-1][6]]);
+						}
+
+
 						branch = tmp_branch[-1][2];
 
 
@@ -723,6 +735,7 @@ var ChessBot = (function(){
 				postNodes(true);
 
 				self.postMessage(['positions', 'call', 0]);
+				self.postMessage(['positions', 'ai_output_fraction_sum', 0]);
 				self.postMessage(['status', 'finished']);
 			}else{
 				object.AI = false;
@@ -773,7 +786,8 @@ var ChessBot = (function(){
 				1:{}, // link to all child objects, -1 - link to self object, -2 - child node id that leads to the best move
 				2:0, // link to parent object
 				3:'alpha', // alpha or beta node
-				4:[] // array of move to reach this node
+				4:[], // array of move to reach this node
+				5: 1 // fraction to show calculating progress
 			};
 
 			initial_node[1][-1] = initial_node; // link to self object
@@ -799,12 +813,17 @@ var ChessBot = (function(){
 					arr = this.ordering(arr);
 				}
 				for(var i = 0; i < arr.length; i++){
+
+					// fraction = parent fraction / arr.length
+					var fraction = branch[-1][5] / arr.length;
+
 					// move coordinates
 					var m = arr[i];
 
 					///pruning
 					if(pruning === true){
 						if(this.pruning(branch) === 0){
+							self.postMessage(['guiUpdate', 'progressBar', (arr.length - i) * fraction]);
 							break;
 						};
 					}
@@ -828,7 +847,8 @@ var ChessBot = (function(){
 						1:{}, // branch of next moves after current
 						2:parent_node, // link to parent object
 						3:node, // alpha or beta node
-						4:m // array of move to reach this node
+						4:m, // array of move to reach this node
+						5:fraction
 					};
 
 					branch[i][1][-1] = branch[i]; // property that point to parent of same level nodes array
@@ -953,6 +973,12 @@ var ChessBot = (function(){
 							}
 						}
 
+						// update progressBar
+						if(self.isWorker){
+							self.postMessage(['guiUpdate', 'progressBar', tmp_branch[-1][5]]);
+						}
+
+
 						branch = tmp_branch[-1][2];
 						// inner node
 						// {
@@ -983,8 +1009,9 @@ var ChessBot = (function(){
 
 				// show remaining nodes amount on last tick
 				postNodes(true);
-				
+
 				self.postMessage(['positions', 'call', 0]);
+				self.postMessage(['positions', 'ai_output_fraction_sum', 0]);
 				self.postMessage(['status', 'finished']);
 			}else{
 				object.AI = false;

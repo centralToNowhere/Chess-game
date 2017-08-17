@@ -180,6 +180,7 @@
 						ai_settings = document.querySelector('.ai-settings'),
 						ai_settings_content = document.createElement('ul');
 						nodes_checked = document.createElement('div'),
+						progressBar = document.createElement('div'),
 						nodes_count_label = document.createElement('span'),
 						undo_arrow = document.createElement('img'),
 						forward_arrow = document.createElement('img'),
@@ -187,6 +188,7 @@
 						intervalId = 0;
 
 					nodes_checked.classList.add('container__nodes-checked');
+					progressBar.classList.add('container__progressBar');
 
 					undo_arrow.src = './images/arrow.png';
 					forward_arrow.src = './images/arrow.png';
@@ -214,30 +216,10 @@
 							// bot = {},
 							algorithm = document.querySelector('input[name="check_algo"]:checked').value;
 
-						// if(window.Worker){
-						// 	var clone = function(obj) {
-						//         if (obj instanceof Array) {
-						//             var out = [];
-						//             for (var i = 0, len = obj.length; i < len; i++) {
-						//                 var value = obj[i];
-						//                 out[i] = (value !== null && typeof value === "object") ? clone(value) : value;
-						//             }
-						//         } else {
-						//             var out = {};
-						//             for (var key in obj) {
-						//                 if (obj.hasOwnProperty(key)) {
-						//                     var value = obj[key];
-						//                     out[key] = (value !== null && typeof value === "object") ? clone(value) : value;
-						//                 }
-						//             }
-						//         }
-						//       	return out;
-	   		// 				}
-	   		// 				var positionsCopy = clone(positions);
-	   		// 				bot = new ChessBot(positionsCopy);
-						// }else{
-						// 	bot = new ChessBot(positions);
-						// }
+						//set progressBar
+						debugger;
+						icon_menu.appendChild(progressBar);
+
 						bot.set_side(positions.current_side);
 						positions.ai_side = positions.current_side;
 
@@ -328,6 +310,8 @@
 									if(property === 'finished'){
 										workerInProgress = false;
 										forward_arrow.classList.remove('active');
+										icon_menu.removeChild(progressBar);
+										console.log('finished');
 										document.dispatchEvent(new Event('workerReady'));
 									}
 									return this.terminate();
@@ -336,8 +320,17 @@
 								// message for GUI 
 								if(subject === 'guiUpdate'){
 									var property = e.data.shift();
-									if(property === 'node'){
-										positions.tools().ai_output_nodes_checked(e.data[0]);
+									if(property === 'nodes'){
+										requestAnimationFrame(function(time){
+											positions.tools().ai_output_nodes_checked(e.data[0]);
+										});
+										return;
+									}
+									if(property === 'progressBar'){
+										requestAnimationFrame(function(time){
+											positions.tools().ai_output_progressBar(e.data[0]);
+										});
+										return;
 									}
 								}
 
@@ -505,6 +498,8 @@
 					window.addEventListener('optimizedResize', scale, false);
 
 					positions.tools().set_output_nodes_checked(nodes_checked);
+					positions.tools().set_output_progressBar(progressBar);
+
 					positions.render();
 					positions.set_possible_moves();
 

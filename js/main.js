@@ -973,22 +973,46 @@ var positions = {
 					this.check = last_update.check;
 				}
 			}.bind(object),
+
 		    ai_move: function(){
+
 		    	var e = new Event("AI_turn", {
 					cancelable: true,
 				});
+
 				document.body.dispatchEvent(e);
 		    },
+
 		    set_output_nodes_checked: function(elem){
+
 		    	this.ai_nodes_checked_elem = elem;
+
 		    }.bind(object),
+
+		    set_output_progressBar: function(elem){
+
+		    	this.ai_progressBar_elem = elem;
+
+		    }.bind(object),
+
 		    ai_output_nodes_checked: function(call){
+
 		    	var call = call || this.call;
+
 		    	if(call <= 1 || !this.ai_nodes_checked_elem){
 		    		return 0;
 		    	}
-    			this.ai_nodes_checked_elem.innerText = '' + call;
+
+				this.ai_nodes_checked_elem.innerText = '' + call;
+
 		    }.bind(object),
+
+		    ai_output_progressBar: function(fraction){
+		    	this.ai_output_fraction_sum += fraction;
+		    	this.ai_progressBar_elem.style.width = (this.ai_output_fraction_sum * 100) + '%';
+
+		    }.bind(object)
+
 		}
 		return tools;
 	},
@@ -1342,6 +1366,8 @@ var positions = {
     game_mode: '',
     ai_side: '',
     ai_nodes_checked_elem: {},
+    ai_progressBar_elem: {},
+    ai_output_fraction_sum: 0,
     AI: false,
     moves_stack: [],
 };

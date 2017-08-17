@@ -353,6 +353,13 @@ chessBot
 }
 .container__nodes-checked{
 	display: inline-block;
+	vertical-align: middle;
+}
+.container__progressBar{
+	background: #5CBAFC;
+	height: 5px;
+	position: absolute;
+	bottom: -5px;
 }
 .container__icon-menu img{
 	display: inline-block;
