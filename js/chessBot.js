@@ -77,6 +77,35 @@ var ChessBot = (function(){
 			side = new_side;
 		};
 
+		this.throttleProgressBar = function(){
+			var calls = 0,
+				tmp = 0,
+				fractionSum = 0,
+				postProgress = function(fraction){
+					self.postMessage(['guiUpdate', 'progressBar', fraction]);
+				},
+				throttle = function(fn, fraction, isLast){
+					fractionSum += fraction;
+					// last tick - show all amount of remainng nodes 
+					if(isLast === true){
+						fn.call(self, 0);
+						fractionSum = 0;
+						return;
+					}
+
+					if(calls >= tmp){
+						tmp = 1.7070* Math.pow(calls, 0.9673);
+						fn.call(self, fractionSum);
+						fractionSum = 0;
+					}
+					calls++;
+
+				}.bind(undefined, postProgress);
+
+			return throttle;
+
+		};
+
 		this.throttlePostNodesCheckedAmount = function(){
 			var calls = 0,
 				tmp = 0,
@@ -453,6 +482,7 @@ var ChessBot = (function(){
 			// set throttle for posting amount of checked nodes to main thread
 			if(self.isWorker){
 				postNodes = this.throttlePostNodesCheckedAmount();
+				progressBar = this.throttleProgressBar();
 			}
 
 			//DOM element is not copied???
@@ -502,7 +532,7 @@ var ChessBot = (function(){
 					var m = arr[i];
 
 					if(this.pruning(branch) === 0){
-						self.postMessage(['guiUpdate', 'progressBar', (arr.length - i) * fraction]);
+						progressBar((arr.length - i) * fraction);
 						break;
 					};
 
@@ -696,7 +726,7 @@ var ChessBot = (function(){
 
 						// update progressBar
 						if(self.isWorker){
-							self.postMessage(['guiUpdate', 'progressBar', tmp_branch[-1][6]]);
+							self.progressBar(tmp_branch[-1][6]);
 						}
 
 
@@ -733,6 +763,8 @@ var ChessBot = (function(){
 
 				// show remaining nodes amount on last tick
 				postNodes(true);
+				progressBar(0, true);
+
 
 				self.postMessage(['positions', 'call', 0]);
 				self.postMessage(['positions', 'ai_output_fraction_sum', 0]);
@@ -774,6 +806,7 @@ var ChessBot = (function(){
 			// set throttle for posting amount of checked nodes to main thread
 			if(self.isWorker){
 				postNodes = this.throttlePostNodesCheckedAmount();
+				progressBar = this.throttleProgressBar();
 			}
 
 			//DOM element is not copied???
@@ -823,7 +856,7 @@ var ChessBot = (function(){
 					///pruning
 					if(pruning === true){
 						if(this.pruning(branch) === 0){
-							self.postMessage(['guiUpdate', 'progressBar', (arr.length - i) * fraction]);
+							progressBar((arr.length - i) * fraction);
 							break;
 						};
 					}
@@ -975,7 +1008,7 @@ var ChessBot = (function(){
 
 						// update progressBar
 						if(self.isWorker){
-							self.postMessage(['guiUpdate', 'progressBar', tmp_branch[-1][5]]);
+							self.progressBar(tmp_branch[-1][5]);
 						}
 
 
@@ -1009,6 +1042,7 @@ var ChessBot = (function(){
 
 				// show remaining nodes amount on last tick
 				postNodes(true);
+				progressBar(0, true);
 
 				self.postMessage(['positions', 'call', 0]);
 				self.postMessage(['positions', 'ai_output_fraction_sum', 0]);
