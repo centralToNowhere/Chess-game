@@ -989,38 +989,50 @@ var positions = {
 
 		    	positions.ai_progressBar_elem = elem;
 
-		    	if(elem.nodeName === 'DIV'){
+		    	// if(elem.nodeName === 'DIV'){
 
-		    		positions.tools.ai_output_progressBar = function(fraction){
+		    	// 	positions.tools.ai_output_progressBar = function(fraction){
 
-		    			positions.ai_output_fraction_sum += fraction;
+		    	// 		positions.ai_output_fraction_sum += fraction;
 
-		    				requestAnimationFrame(function(time){
+		    	// 			requestAnimationFrame(function(time){
 
-		    					positions.ai_progressBar_elem.style.width = (positions.ai_output_fraction_sum * 100) + '%';
+		    	// 				positions.ai_progressBar_elem.style.width = (positions.ai_output_fraction_sum * 100) + '%';
 
-		    				});
+		    	// 			});
 
-		    		}
+		    	// 	}
 
-		    	}
+		    	// }
 
-		    	if(elem.nodeName === 'PROGRESS'){
+		    	// if(elem.nodeName === 'PROGRESS'){
 
-		    		positions.tools.ai_output_progressBar = function(fraction){
+		    	// 	positions.tools.ai_output_progressBar = function(fraction){
 
-		    			positions.ai_output_fraction_sum += fraction;
+		    	// 		positions.ai_output_fraction_sum += fraction;
 
-	    				requestAnimationFrame(function(time){
+	    		// 		requestAnimationFrame(function(time){
 
-	    					positions.ai_progressBar_elem.value = (positions.ai_output_fraction_sum * 100) + '';
+	    		// 			positions.ai_progressBar_elem.value = (positions.ai_output_fraction_sum * 100) + '';
 
-	    				});
+	    		// 		});
 
-		    		}
+		    	// 	}
 
-		    	}
+		    	// }
 
+		    },
+
+		    ai_output_progressBar: function(fraction){
+
+    			positions.ai_output_fraction_sum += fraction;
+
+				requestAnimationFrame(function(time){
+
+					positions.ai_progressBar_elem.style.width = (positions.ai_output_fraction_sum * 100) + '%';
+
+				});
+				
 		    },
 
 		    ai_output_nodes_checked: function(call){

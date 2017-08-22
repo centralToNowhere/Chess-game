@@ -484,6 +484,10 @@ var ChessBot = (function(){
 			object.AI = true;
 			var real = object;
 			object = this.cloner.clone(object);
+			// now in object methods var 'positions' point to real object. We need to set object self context. So, inside object do
+			//  'positions = this'
+			object.setSelfContext(); 
+			
 			var postNodes;
 
 			// set throttle for posting amount of checked nodes to main thread
