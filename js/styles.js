@@ -313,6 +313,7 @@
 									if(property === 'finished'){
 										workerInProgress = false;
 										forward_arrow.classList.remove('active');
+										progressBar.style.width = "0";
 										icon_menu.removeChild(progressBar);
 										console.log('finished');
 										document.dispatchEvent(new Event('workerReady'));
@@ -324,15 +325,11 @@
 								if(subject === 'guiUpdate'){
 									var property = e.data.shift();
 									if(property === 'nodes'){
-										requestAnimationFrame(function(time){
-											positions.tools().ai_output_nodes_checked(e.data[0]);
-										});
+										positions.tools.ai_output_nodes_checked(e.data[0]);
 										return;
 									}
 									if(property === 'progressBar'){
-										requestAnimationFrame(function(time){
-											positions.tools().ai_output_progressBar(e.data[0]);
-										});
+										positions.tools.ai_output_progressBar(e.data[0]);
 										return;
 									}
 								}
@@ -368,7 +365,7 @@
 							return;
 						}else{
 							setTimeout(function(){
-								positions.tools().undo();
+								positions.tools.undo();
 								positions.render();
 								that.classList.remove('active');
 							}, 0);
@@ -380,19 +377,19 @@
 						var that = this;
 						e.stopPropagation();
 						if(window.Worker && !workerInProgress){
-							positions.tools().ai_move();
+							positions.tools.ai_move();
 						}else if(workerInProgress){
 							return;
 						}else{
 							setTimeout(function(){
-								positions.tools().ai_move();
+								positions.tools.ai_move();
 								that.classList.remove('active');
 							}, 0);
 						}
 					};
 
 					var workerCircle = function(){
-						positions.tools().ai_move();
+						positions.tools.ai_move();
 					};
 
 					var autoplay_func =	function(e){
@@ -400,7 +397,7 @@
 						this.classList.toggle('active');
 
 						var circle = function(){
-							positions.tools().ai_move();
+							positions.tools.ai_move();
 							setTimeout(circle, 0);
 						};
 
@@ -500,8 +497,8 @@
 					scale();
 					window.addEventListener('optimizedResize', scale, false);
 
-					positions.tools().set_output_nodes_checked(nodes_checked);
-					positions.tools().set_output_progressBar(progressBar);
+					positions.tools.set_output_nodes_checked(nodes_checked);
+					positions.tools.set_output_progressBar(progressBar);
 
 					positions.render();
 					positions.set_possible_moves();

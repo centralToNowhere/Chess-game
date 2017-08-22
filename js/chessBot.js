@@ -34,7 +34,7 @@ var ChessBot = (function(){
 	*/
 
 	return function(object){
-		debugger;
+
 		var depth = 4;
 		var current_depth = 1;
 		var side = object.current_side === 'white' ? 'black' : 'white';
@@ -64,7 +64,7 @@ var ChessBot = (function(){
 
 		this.move_undo = function(){
 
-			object.tools().undo();
+			object.tools.undo();
 
 			return 0;
 		};
@@ -86,9 +86,10 @@ var ChessBot = (function(){
 				},
 				throttle = function(fn, fraction, isLast){
 					fractionSum += fraction;
+
 					// last tick - show all amount of remainng nodes 
 					if(isLast === true){
-						fn.call(self, 0);
+						fn.call(self, fractionSum);
 						fractionSum = 0;
 						return;
 					}
@@ -183,14 +184,20 @@ var ChessBot = (function(){
 			// less valuable atacker / most valuable victim
 			arr_attacks.sort(function(a, b){
 				function cost(move){
-					var name1 = object.matrix[move[0][0]][move[0][1]],
-						name2 = object.matrix[move[1][0]][move[1][1]],
-						type1 = name1.split('_')[0],
-						type2 = name2.split('_')[0],
-						// color1 = name1.split('_')[name1.split('_').length-1],
-						// color2 = name2.split('_')[name2.split('_').length-1],
-						cost1 = that.cost[type1] === undefined ? that.cost[type1.substr(0, type1.length-1)] : that.cost[type1],
-						cost2 = that.cost[type2] === undefined ? that.cost[type2.substr(0, type2.length-1)] : that.cost[type2];
+					try{
+						var name1 = object.matrix[move[0][0]][move[0][1]],
+							name2 = object.matrix[move[1][0]][move[1][1]],
+							type1 = name1.split('_')[0],
+							type2 = name2.split('_')[0],
+							// color1 = name1.split('_')[name1.split('_').length-1],
+							// color2 = name2.split('_')[name2.split('_').length-1],
+							cost1 = that.cost[type1] === undefined ? that.cost[type1.substr(0, type1.length-1)] : that.cost[type1],
+							cost2 = that.cost[type2] === undefined ? that.cost[type2.substr(0, type2.length-1)] : that.cost[type2];
+						}catch(e){
+							debugger;
+							console.log(e);
+						}
+
 
 
 
@@ -765,10 +772,14 @@ var ChessBot = (function(){
 				postNodes(true);
 				progressBar(0, true);
 
+				// 50 ms to show last tick on progressbar, then hide it
+				setTimeout(function(){
+					self.postMessage(['positions', 'call', 0]);
+					self.postMessage(['positions', 'ai_output_fraction_sum', 0]);
+					self.postMessage(['status', 'finished']);
+				}.bind(self), 50);
 
-				self.postMessage(['positions', 'call', 0]);
-				self.postMessage(['positions', 'ai_output_fraction_sum', 0]);
-				self.postMessage(['status', 'finished']);
+
 			}else{
 				object.AI = false;
 				this.move(tree[tree[-2]][4][0][0], tree[tree[-2]][4][0][1], tree[tree[-2]][4][1][0], tree[tree[-2]][4][1][1], tree[tree[-2]][4][1][2], object);
@@ -801,6 +812,11 @@ var ChessBot = (function(){
 			object.AI = true;
 			var real = object;
 			object = this.cloner.clone(object);
+
+			// now in object methods var 'positions' point to real object. We need to set object self context. So, inside object do
+			//  'positions = this'
+			object.setSelfContext(); 
+
 			var postNodes;
 
 			// set throttle for posting amount of checked nodes to main thread
@@ -838,6 +854,7 @@ var ChessBot = (function(){
 			//build nodes
 			var half_move = function half_move(){
 
+				debugger;
 				object.current_move = 'true';
 				var arr = this.all_moves_side_func(object.current_side);
 
@@ -1028,7 +1045,7 @@ var ChessBot = (function(){
 					}
 				}
 			}.apply(this);
-			debugger;
+
 			real.call = object.call;
 
 			object = real; // restore positions object
@@ -1044,9 +1061,14 @@ var ChessBot = (function(){
 				postNodes(true);
 				progressBar(0, true);
 
-				self.postMessage(['positions', 'call', 0]);
-				self.postMessage(['positions', 'ai_output_fraction_sum', 0]);
-				self.postMessage(['status', 'finished']);
+				// 50 ms to show last tick on progressbar, then hide it
+				setTimeout(function(){
+					self.postMessage(['positions', 'call', 0]);
+					self.postMessage(['positions', 'ai_output_fraction_sum', 0]);
+					self.postMessage(['status', 'finished']);
+				}.bind(self), 50);
+
+
 			}else{
 				object.AI = false;
 				this.move(tree[tree[-2]][4][0][0], tree[tree[-2]][4][0][1], tree[tree[-2]][4][1][0], tree[tree[-2]][4][1][1], tree[tree[-2]][4][1][2], object);
