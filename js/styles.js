@@ -178,17 +178,17 @@
 					var board = document.querySelector('.board-container'),
 						icon_menu = document.querySelector('.container__icon-menu'),
 						ai_settings = document.querySelector('.ai-settings'),
-						ai_settings_content = document.createElement('ul');
-						nodes_checked = document.createElement('div'),
-						progressBar = document.createElement('div'),
+						ai_settings_content = document.createElement('ul'),
 						nodes_count_label = document.createElement('span'),
+						nodes_count_div = document.createElement('div'),
+						container__nodes_count = document.createElement('div'),
 						progressBar = document.createElement('progress'),
 						undo_arrow = document.createElement('img'),
 						forward_arrow = document.createElement('img'),
 						autoplay = document.createElement('img'),
 						intervalId = 0;
 
-					nodes_checked.classList.add('container__nodes-checked');
+					container__nodes_count.classList.add('container__nodes-checked');
 					progressBar.classList.add('container__progressBar');
 
 					undo_arrow.src = './images/arrow.png';
@@ -203,11 +203,13 @@
 					nodes_count_label.textContent = "Checked nodes: ";
 					document.querySelector('.ai-settings__x-mark-menu p').innerHTML = 'Settings';
 
+					container__nodes_count.appendChild(nodes_count_label);
+					container__nodes_count.appendChild(nodes_count_div);
+
 					icon_menu.appendChild(undo_arrow);
 					icon_menu.appendChild(autoplay);
 					icon_menu.appendChild(forward_arrow);
-					icon_menu.appendChild(nodes_count_label);
-					icon_menu.appendChild(nodes_checked);
+					icon_menu.appendChild(container__nodes_count);
 
 					console.log('ChessBot loaded');
 
@@ -502,7 +504,7 @@
 					scale();
 					window.addEventListener('optimizedResize', scale, false);
 
-					positions.tools.set_output_nodes_checked(nodes_checked);
+					positions.tools.set_output_nodes_checked(nodes_count_div);
 					positions.tools.set_output_progressBar(progressBar);
 
 					positions.render();

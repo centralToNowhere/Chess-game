@@ -362,6 +362,9 @@ chessBot
 }
 .container__nodes-checked{
 	display: inline-block;
+}
+.container__nodes-checked > div {
+	display: inline-block;
 	vertical-align: middle;
 }
 .container__progressBar{
