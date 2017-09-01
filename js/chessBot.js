@@ -730,7 +730,7 @@ var ChessBot = (function(){
 							}
 							// value < beta
 							if(res < branch[0][2]){
-								branch[0][1] = res;
+								branch[0][2] = res;
 							}
 						}
 
