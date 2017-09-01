@@ -383,14 +383,45 @@
 						this.classList.add('active');
 						var that = this;
 						e.stopPropagation();
+
+						// check if game is already finished (if mate)
+						var e = new Event('click_king');
+						var king = document.querySelector('.king_' + positions.current_side);
+						king.dispatchEvent(e);
+
 						if(window.Worker && !workerInProgress){
-							positions.tools.ai_move();
+
+							if(positions.win === "black" || positions.win === "white"){
+
+								that.classList.remove('active');
+								return;
+
+							}else{
+
+								positions.tools.ai_move();
+
+							}
+
 						}else if(workerInProgress){
+
 							return;
+
 						}else{
 							setTimeout(function(){
-								positions.tools.ai_move();
-								that.classList.remove('active');
+
+								if(positions.win === "black" || positions.win === "white"){
+
+									that.classList.remove('active');
+									return;
+
+
+								}else{
+
+									positions.tools.ai_move();
+									that.classList.remove('active');
+
+								}
+
 							}, 0);
 						}
 					};
