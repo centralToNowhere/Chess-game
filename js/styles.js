@@ -220,7 +220,6 @@
 							algorithm = document.querySelector('input[name="check_algo"]:checked').value;
 
 						//set progressBar
-						debugger;
 						icon_menu.appendChild(progressBar);
 
 						bot.set_side(positions.current_side);
@@ -294,9 +293,7 @@
 								// message about main.js object
 								if(subject === 'positions'){
 									var property = e.data.shift();
-									if(property === 'ai_output_fraction_sum'){
-										debugger;
-									}
+
 									if(property === 'execute_move'){
 										e.data.push(positions);
 										positions[property].apply(positions, e.data)();
@@ -460,7 +457,7 @@
 
 						}else{
 							if(window.Worker){
-								debugger;
+								
 								setTimeout(function(){
 									document.removeEventListener('workerReady', workerCircle);
 								}, 0);

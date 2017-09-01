@@ -184,19 +184,15 @@ var ChessBot = (function(){
 			// less valuable atacker / most valuable victim
 			arr_attacks.sort(function(a, b){
 				function cost(move){
-					try{
-						var name1 = object.matrix[move[0][0]][move[0][1]],
-							name2 = object.matrix[move[1][0]][move[1][1]],
-							type1 = name1.split('_')[0],
-							type2 = name2.split('_')[0],
-							// color1 = name1.split('_')[name1.split('_').length-1],
-							// color2 = name2.split('_')[name2.split('_').length-1],
-							cost1 = that.cost[type1] === undefined ? that.cost[type1.substr(0, type1.length-1)] : that.cost[type1],
-							cost2 = that.cost[type2] === undefined ? that.cost[type2.substr(0, type2.length-1)] : that.cost[type2];
-						}catch(e){
-							debugger;
-							console.log(e);
-						}
+					var name1 = object.matrix[move[0][0]][move[0][1]],
+						name2 = object.matrix[move[1][0]][move[1][1]],
+						type1 = name1.split('_')[0],
+						type2 = name2.split('_')[0],
+						// color1 = name1.split('_')[name1.split('_').length-1],
+						// color2 = name2.split('_')[name2.split('_').length-1],
+						cost1 = that.cost[type1] === undefined ? that.cost[type1.substr(0, type1.length-1)] : that.cost[type1],
+						cost2 = that.cost[type2] === undefined ? that.cost[type2.substr(0, type2.length-1)] : that.cost[type2];	
+
 
 
 
@@ -659,8 +655,10 @@ var ChessBot = (function(){
 
 							if(null_search === 0){ // null window?
 
+
 								//re-search
 								if(i !== 0 && res > branch[0][1] && res < branch[0][2]){
+
 
 									// delete child node
 									branch[1][i] = null;
@@ -858,7 +856,6 @@ var ChessBot = (function(){
 			//build nodes
 			var half_move = function half_move(){
 
-				debugger;
 				object.current_move = 'true';
 				var arr = this.all_moves_side_func(object.current_side);
 

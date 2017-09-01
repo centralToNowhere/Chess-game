@@ -23,7 +23,6 @@ addEventListener('message', function(e){
 			chessBot.alphaBeta(obj);
 			break;
 		case 'alphaBeta':
-			debugger;
 			chessBot.alphaBeta(obj);
 			break;
 		case 'negaScout':
