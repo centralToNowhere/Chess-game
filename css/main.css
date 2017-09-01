@@ -5,7 +5,7 @@
     background: #5CBAFC;
 }
 ::-moz-progress-bar {
-    background: #fff;
+    background: #5CBAFC;
 }
 html, body, div, span, p, h1, h2, h3, h4, h5, h6, … { 
     margin: 0; 
@@ -51,7 +51,6 @@ input[data-check]:checked + label{
 	display: block;
 	width: 490px;
 	height: 490px;
-	margin: 0 auto;
 	margin-top: -245px;
 	margin-left: -245px;
 	border: 5px solid #999999;
@@ -354,11 +353,10 @@ chessBot
 }
 .container__icon-menu{
 	position: relative;
-	left:0;
 	background-color: #CED0B6;
 	color:white;
 	font-size: 1.5em;
-	width:1366px;
+	width: 100%;
 }
 .container__nodes-checked{
 	display: inline-block;
@@ -370,11 +368,11 @@ chessBot
 .container__progressBar{
 	display: block;
 	width: 100%;
-	color: red;
 	background: #fff;
 	height: 5px;
 	position: absolute;
 	bottom: -5px;
+	border: none;
 }
 .container__icon-menu img{
 	display: inline-block;
@@ -534,13 +532,13 @@ chessBot
 	z-index: 100;
 	box-shadow: 0 -8px 16px 0 rgba(0,0,0,0.2), 0 8px 16px 0 rgba(0,0,0,0.2),0 6px 35px 0 rgba(0,0,0,0.19);
 }
-.ai-settings__select-div {
+.ai-settings__item-select-div {
 	position: relative;
 	float: right;
 	left: -8px;
 	top: -8px;
 }
-.ai-settings__select-div > select {
+.ai-settings__item-select-div > select {
 	display: none;
 	visibility: hidden;
 }

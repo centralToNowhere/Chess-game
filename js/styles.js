@@ -198,7 +198,7 @@
 					forward_arrow.classList.add('container__forward-arrow');
 					autoplay.classList.add('container__auto');
 					ai_settings.appendChild(ai_settings_content); 
-					ai_settings_content.outerHTML = '<ul class="ai-settings__list">Search algorithm <li class="ai-settings__item">Minimax <input type="radio" name="check_algo" value="minimax" id="algo_minimax"> <label for="algo_minimax"></label> </li><li class="ai-settings__item">Alpha-Beta <input type="radio" name="check_algo" value="alphaBeta" id="algo_alphaBeta" checked> <label for="algo_alphaBeta"></label> <ul class="ai-settings__list"> <li class="ai-settings__item">Ordering <input type="checkbox" id="algo_alphaBeta_ordering" checked> <label for="algo_alphaBeta_ordering"></label> </li></ul> </li><li class="ai-settings__item">NegaScout <input type="radio" name="check_algo" value="negaScout" id="algo_negaScout"> <label for="algo_negaScout"></label> </li><li class="ai-settings__item"> Depth <div class="ai-settings__select-div"> <select name="depth"> <option value="3">3</option> <option value="4" selected>4</option> <option value="5">5</option> <option value="6">6</option> </select> </div><div class="ai-settings__item-select">4</div><ul class="ai-settings__item-select-list"> <li class="ai-settings__item-select-item" data-value="3">3</li><li class="ai-settings__item-select-item" data-value="4">4</li><li class="ai-settings__item-select-item" data-value="5">5</li><li class="ai-settings__item-select-item" data-value="6">6</li></ul> </div></li><li class="ai-settings__item">Evaluation <ul class="ai-settings__list"> <li class="ai-settings__item"> Material <input type="checkbox" id="check_eval_material" checked> <label for="check_eval_material"></label> </li><li class="ai-settings__item"> Position <input type="checkbox" id="check_eval_position" checked> <label for="check_eval_position"></label> </li></ul> </li></ul>';
+					ai_settings_content.outerHTML = '<ul class="ai-settings__list">Search algorithm <li class="ai-settings__item">Minimax <input type="radio" name="check_algo" value="minimax" id="algo_minimax"> <label for="algo_minimax"></label> </li><li class="ai-settings__item">Alpha-Beta <input type="radio" name="check_algo" value="alphaBeta" id="algo_alphaBeta" checked> <label for="algo_alphaBeta"></label> <ul class="ai-settings__list"> <li class="ai-settings__item">Ordering <input type="checkbox" id="algo_alphaBeta_ordering" checked> <label for="algo_alphaBeta_ordering"></label> </li></ul> </li><li class="ai-settings__item">NegaScout <input type="radio" name="check_algo" value="negaScout" id="algo_negaScout"> <label for="algo_negaScout"></label> </li><li class="ai-settings__item"> Depth <div class="ai-settings__item-select-div"> <select name="depth"> <option value="3">3</option> <option value="4" selected>4</option> <option value="5">5</option> <option value="6">6</option> </select> <div class="ai-settings__item-select">4</div><ul class="ai-settings__item-select-list"> <li class="ai-settings__item-select-item" data-value="3">3</li><li class="ai-settings__item-select-item" data-value="4">4</li><li class="ai-settings__item-select-item" data-value="5">5</li><li class="ai-settings__item-select-item" data-value="6">6</li></ul> </div></li><li class="ai-settings__item">Evaluation <ul class="ai-settings__list"> <li class="ai-settings__item"> Material <input type="checkbox" id="check_eval_material" checked> <label for="check_eval_material"></label> </li><li class="ai-settings__item"> Position <input type="checkbox" id="check_eval_position" checked> <label for="check_eval_position"></label> </li></ul> </li></ul>';
 
 					nodes_count_label.textContent = "Checked nodes: ";
 					document.querySelector('.ai-settings__x-mark-menu p').innerHTML = 'Settings';
@@ -220,6 +220,7 @@
 							algorithm = document.querySelector('input[name="check_algo"]:checked').value;
 
 						//set progressBar
+						progressBar.value = 0;
 						icon_menu.appendChild(progressBar);
 
 						bot.set_side(positions.current_side);
@@ -313,6 +314,7 @@
 									if(property === 'finished'){
 										workerInProgress = false;
 										forward_arrow.classList.remove('active');
+										debugger;
 										if(progressBar.nodeName === 'DIV'){
 											progressBar.style.width = "0";
 										}else if(progressBar.nodeName === 'PROGRESS'){
