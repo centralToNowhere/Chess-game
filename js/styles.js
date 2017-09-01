@@ -182,6 +182,7 @@
 						nodes_checked = document.createElement('div'),
 						progressBar = document.createElement('div'),
 						nodes_count_label = document.createElement('span'),
+						progressBar = document.createElement('progress'),
 						undo_arrow = document.createElement('img'),
 						forward_arrow = document.createElement('img'),
 						autoplay = document.createElement('img'),
@@ -313,7 +314,11 @@
 									if(property === 'finished'){
 										workerInProgress = false;
 										forward_arrow.classList.remove('active');
-										progressBar.style.width = "0";
+										if(progressBar.nodeName === 'DIV'){
+											progressBar.style.width = "0";
+										}else if(progressBar.nodeName === 'PROGRESS'){
+											progressBar.value = "0";
+										}
 										icon_menu.removeChild(progressBar);
 										console.log('finished');
 										document.dispatchEvent(new Event('workerReady'));

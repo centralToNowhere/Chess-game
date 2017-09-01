@@ -1,3 +1,12 @@
+::-webkit-progress-bar {
+    background: #fff;
+}
+::-webkit-progress-value {
+    background: #5CBAFC;
+}
+::-moz-progress-bar {
+    background: #fff;
+}
 html, body, div, span, p, h1, h2, h3, h4, h5, h6, … { 
     margin: 0; 
     padding: 0; 
@@ -356,7 +365,10 @@ chessBot
 	vertical-align: middle;
 }
 .container__progressBar{
-	background: #5CBAFC;
+	display: block;
+	width: 100%;
+	color: red;
+	background: #fff;
 	height: 5px;
 	position: absolute;
 	bottom: -5px;
