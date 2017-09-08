@@ -35,10 +35,52 @@ var ChessBot = (function(){
 
 	return function(object){
 
-		var depth = 4;
-		var current_depth = 1;
-		var side = object.current_side === 'white' ? 'black' : 'white';
+		var depth = 4,
+			current_depth = 1,
+			side = object.current_side === 'white' ? 'black' : 'white';
 
+		function throttle(fn){
+			var calls = 0,
+				tmp = 0,
+				fractionSum = 0,
+				throttleFn = function(fn, fraction, isLast){
+					if(fraction){
+						fractionSum += fraction;
+					}
+					// last tick - show all amount of remainng nodes 
+					if(isLast === true){
+						debugger;
+						(typeof fraction != 'undefined' ? fn.call(self, fractionSum) : fn.call(self));
+						fractionSum = 0;
+						return;
+					}
+
+					if(calls >= tmp){
+						tmp = 1.7070* Math.pow(calls, 0.9673);
+						(typeof fraction != 'undefined' ? fn.call(self, fractionSum) : fn.call(self));
+						fractionSum = 0;
+					}
+					calls++;
+
+				}.bind(undefined, fn);
+
+			return throttleFn;
+			
+		};
+
+		if(self.isWorker){
+			debugger;
+			var postNodes = throttle(function(){
+					self.postMessage(['guiUpdate', 'nodes', object.call]);
+				}),
+				progressBar = throttle(function(fraction){
+					self.postMessage(['guiUpdate', 'progressBar', fraction]);
+				}),
+				postPruning = throttle(function(fraction){
+					debugger;
+					self.postMessage(['guiUpdate', 'pruning', fraction]);
+				});
+		}
 
 		this.cost = {
 			'pawn':100,
@@ -75,61 +117,6 @@ var ChessBot = (function(){
 
 		this.set_side = function(new_side){
 			side = new_side;
-		};
-
-		this.throttleProgressBar = function(){
-			var calls = 0,
-				tmp = 0,
-				fractionSum = 0,
-				postProgress = function(fraction){
-					self.postMessage(['guiUpdate', 'progressBar', fraction]);
-				},
-				throttle = function(fn, fraction, isLast){
-					fractionSum += fraction;
-
-					// last tick - show all amount of remainng nodes 
-					if(isLast === true){
-						fn.call(self, fractionSum);
-						fractionSum = 0;
-						return;
-					}
-
-					if(calls >= tmp){
-						tmp = 1.7070* Math.pow(calls, 0.9673);
-						fn.call(self, fractionSum);
-						fractionSum = 0;
-					}
-					calls++;
-
-				}.bind(undefined, postProgress);
-
-			return throttle;
-
-		};
-
-		this.throttlePostNodesCheckedAmount = function(){
-			var calls = 0,
-				tmp = 0,
-				postNodes = function(){
-					self.postMessage(['guiUpdate', 'nodes', object.call]);
-				},
-				throttle = function(fn, isLast){
-
-					// last tick - show all amount of remainng nodes 
-					if(isLast === true){
-						fn.apply(self);
-						return;
-					}
-
-					if(calls >= tmp){
-						tmp = 1.7070* Math.pow(calls, 0.9673);
-						fn.apply(self);
-					}
-					calls++;
-
-				}.bind(undefined, postNodes);
-
-			return throttle;
 		};
 
 		this.pruning = function(branch){
@@ -303,7 +290,7 @@ var ChessBot = (function(){
 			});
 
 			return sortedArr;
-		}
+		};
 
 		this.evaluate = function(eval_obj){
 			object.current_move = true;
@@ -460,7 +447,40 @@ var ChessBot = (function(){
 		        it: it
 		        }).it;
 		    }
-		},
+		};
+
+		this.sendResult = function(tree){
+
+			if(self.isWorker){
+				self.postMessage(['positions', 'AI', false]);
+				self.postMessage(['positions', 'execute_move', tree[tree[-2]][4][0][0], tree[tree[-2]][4][0][1], tree[tree[-2]][4][1][0], tree[tree[-2]][4][1][1], tree[tree[-2]][4][1][2]]);
+				object.current_side = object.ai_side === 'white' ? 'black' : 'white';
+				self.postMessage(['positions', 'current_side', object.current_side]);
+				self.postMessage(['positions', 'ai_side', '']);
+
+				// show remaining nodes amount on last tick
+				postNodes(undefined, true);
+				progressBar(0, true);
+				postPruning(0, true);
+
+				// 50 ms to show last tick on progressbar, then hide it
+				setTimeout(function(){
+					self.postMessage(['positions', 'call', 0]);
+					self.postMessage(['positions', 'ai_output_fraction_sum', 0]);
+					self.postMessage(['status', 'finished']);
+				}.bind(self), 50);
+
+
+			}else{
+				object.AI = false;
+				this.move(tree[tree[-2]][4][0][0], tree[tree[-2]][4][0][1], tree[tree[-2]][4][1][0], tree[tree[-2]][4][1][1], tree[tree[-2]][4][1][2], object);
+				object.current_side = object.ai_side === 'white' ? 'black' : 'white';
+				object.ai_side = '';
+				object.call = 0;
+			}
+
+		};
+
 
 		this.negascout = function(ai_settings){
 
@@ -484,13 +504,6 @@ var ChessBot = (function(){
 			//  'positions = this'
 			object.setSelfContext(); 
 			
-			var postNodes;
-
-			// set throttle for posting amount of checked nodes to main thread
-			if(self.isWorker){
-				postNodes = this.throttlePostNodesCheckedAmount();
-				progressBar = this.throttleProgressBar();
-			}
 
 			//DOM element is not copied???
 			object.ai_nodes_checked_elem = real.ai_nodes_checked_elem;
@@ -539,7 +552,10 @@ var ChessBot = (function(){
 					var m = arr[i];
 
 					if(this.pruning(branch) === 0){
-						progressBar((arr.length - i) * fraction);
+						if(progressBar && postPruning){
+							progressBar((arr.length - i) * fraction);
+							postPruning((arr.length - i) * fraction);
+						}
 						break;
 					};
 
@@ -563,7 +579,7 @@ var ChessBot = (function(){
 
 					current_depth++;
 
-					if(self.isWorker){
+					if(postNodes){
 						postNodes();
 					}
 
@@ -734,8 +750,8 @@ var ChessBot = (function(){
 
 
 						// update progressBar
-						if(self.isWorker){
-							self.progressBar(tmp_branch[-1][6]);
+						if(progressBar){
+							progressBar(tmp_branch[-1][6]);
 						}
 
 
@@ -762,33 +778,9 @@ var ChessBot = (function(){
 			real.call = object.call;
 
 			object = real; // restore positions object
+
 			// real move
-			if(self.isWorker){
-				self.postMessage(['positions', 'AI', false]);
-				self.postMessage(['positions', 'execute_move', tree[tree[-2]][4][0][0], tree[tree[-2]][4][0][1], tree[tree[-2]][4][1][0], tree[tree[-2]][4][1][1], tree[tree[-2]][4][1][2]]);
-				object.current_side = object.ai_side === 'white' ? 'black' : 'white';
-				self.postMessage(['positions', 'current_side', object.current_side]);
-				self.postMessage(['positions', 'ai_side', '']);
-
-				// show remaining nodes amount on last tick
-				postNodes(true);
-				progressBar(0, true);
-
-				// 50 ms to show last tick on progressbar, then hide it
-				setTimeout(function(){
-					self.postMessage(['positions', 'call', 0]);
-					self.postMessage(['positions', 'ai_output_fraction_sum', 0]);
-					self.postMessage(['status', 'finished']);
-				}.bind(self), 50);
-
-
-			}else{
-				object.AI = false;
-				this.move(tree[tree[-2]][4][0][0], tree[tree[-2]][4][0][1], tree[tree[-2]][4][1][0], tree[tree[-2]][4][1][1], tree[tree[-2]][4][1][2], object);
-				object.current_side = object.ai_side === 'white' ? 'black' : 'white';
-				object.ai_side = '';
-				object.call = 0;
-			}
+			this.sendResult(tree);
 
 			
 			return tree[tree[-2]][4];
@@ -818,14 +810,6 @@ var ChessBot = (function(){
 			// now in object methods var 'positions' point to real object. We need to set object self context. So, inside object do
 			//  'positions = this'
 			object.setSelfContext(); 
-
-			var postNodes;
-
-			// set throttle for posting amount of checked nodes to main thread
-			if(self.isWorker){
-				postNodes = this.throttlePostNodesCheckedAmount();
-				progressBar = this.throttleProgressBar();
-			}
 
 			//DOM element is not copied???
 			object.ai_nodes_checked_elem = real.ai_nodes_checked_elem;
@@ -874,7 +858,10 @@ var ChessBot = (function(){
 					///pruning
 					if(pruning === true){
 						if(this.pruning(branch) === 0){
-							progressBar((arr.length - i) * fraction);
+							if(progressBar && postPruning){
+								progressBar((arr.length - i) * fraction);
+								postPruning((arr.length - i) * fraction);
+							}
 							break;
 						};
 					}
@@ -885,7 +872,7 @@ var ChessBot = (function(){
 
 					current_depth++;
 
-					if(self.isWorker){
+					if(postNodes){
 						postNodes();
 					}
 					
@@ -1025,8 +1012,8 @@ var ChessBot = (function(){
 						}
 
 						// update progressBar
-						if(self.isWorker){
-							self.progressBar(tmp_branch[-1][5]);
+						if(progressBar){
+							progressBar(tmp_branch[-1][5]);
 						}
 
 
@@ -1050,33 +1037,9 @@ var ChessBot = (function(){
 			real.call = object.call;
 
 			object = real; // restore positions object
+
 			// real move
-			if(self.isWorker){
-				self.postMessage(['positions', 'AI', false]);
-				self.postMessage(['positions', 'execute_move', tree[tree[-2]][4][0][0], tree[tree[-2]][4][0][1], tree[tree[-2]][4][1][0], tree[tree[-2]][4][1][1], tree[tree[-2]][4][1][2]]);
-				object.current_side = object.ai_side === 'white' ? 'black' : 'white';
-				self.postMessage(['positions', 'current_side', object.current_side]);
-				self.postMessage(['positions', 'ai_side', '']);
-
-				// show remaining nodes amount on last tick
-				postNodes(true);
-				progressBar(0, true);
-
-				// 50 ms to show last tick on progressbar, then hide it
-				setTimeout(function(){
-					self.postMessage(['positions', 'call', 0]);
-					self.postMessage(['positions', 'ai_output_fraction_sum', 0]);
-					self.postMessage(['status', 'finished']);
-				}.bind(self), 50);
-
-
-			}else{
-				object.AI = false;
-				this.move(tree[tree[-2]][4][0][0], tree[tree[-2]][4][0][1], tree[tree[-2]][4][1][0], tree[tree[-2]][4][1][1], tree[tree[-2]][4][1][2], object);
-				object.current_side = object.ai_side === 'white' ? 'black' : 'white';
-				object.ai_side = '';
-				object.call = 0;
-			}
+			this.sendResult(tree);
 			
 			return tree[tree[-2]][4];
 		};

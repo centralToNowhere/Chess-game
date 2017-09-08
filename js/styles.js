@@ -182,13 +182,17 @@
 						nodes_count_label = document.createElement('span'),
 						nodes_count_div = document.createElement('div'),
 						container__nodes_count = document.createElement('div'),
+						pruning_label = document.createElement('span'),
+						pruning_div = document.createElement('div'),
+						container__pruning= document.createElement('div'),
 						progressBar = document.createElement('progress'),
 						undo_arrow = document.createElement('img'),
 						forward_arrow = document.createElement('img'),
 						autoplay = document.createElement('img'),
 						intervalId = 0;
 
-					container__nodes_count.classList.add('container__nodes-checked');
+					container__nodes_count.classList.add('container__ai-info-output');
+					container__pruning.classList.add('container__ai-info-output');
 					progressBar.classList.add('container__progressBar');
 
 					undo_arrow.src = './images/arrow.png';
@@ -201,15 +205,20 @@
 					ai_settings_content.outerHTML = '<ul class="ai-settings__list">Search algorithm <li class="ai-settings__item">Minimax <input type="radio" name="check_algo" value="minimax" id="algo_minimax"> <label for="algo_minimax"></label> </li><li class="ai-settings__item">Alpha-Beta <input type="radio" name="check_algo" value="alphaBeta" id="algo_alphaBeta" checked> <label for="algo_alphaBeta"></label> <ul class="ai-settings__list"> <li class="ai-settings__item">Ordering <input type="checkbox" id="algo_alphaBeta_ordering" checked> <label for="algo_alphaBeta_ordering"></label> </li></ul> </li><li class="ai-settings__item">NegaScout <input type="radio" name="check_algo" value="negaScout" id="algo_negaScout"> <label for="algo_negaScout"></label> </li><li class="ai-settings__item"> Depth <div class="ai-settings__item-select-div"> <select name="depth"> <option value="3">3</option> <option value="4" selected>4</option> <option value="5">5</option> <option value="6">6</option> </select> <div class="ai-settings__item-select">4</div><ul class="ai-settings__item-select-list"> <li class="ai-settings__item-select-item" data-value="3">3</li><li class="ai-settings__item-select-item" data-value="4">4</li><li class="ai-settings__item-select-item" data-value="5">5</li><li class="ai-settings__item-select-item" data-value="6">6</li></ul> </div></li><li class="ai-settings__item">Evaluation <ul class="ai-settings__list"> <li class="ai-settings__item"> Material <input type="checkbox" id="check_eval_material" checked> <label for="check_eval_material"></label> </li><li class="ai-settings__item"> Position <input type="checkbox" id="check_eval_position" checked> <label for="check_eval_position"></label> </li></ul> </li></ul>';
 
 					nodes_count_label.textContent = "Checked nodes: ";
+					pruning_label.textContent = "Cut-offs: ";
 					document.querySelector('.ai-settings__x-mark-menu p').innerHTML = 'Settings';
 
 					container__nodes_count.appendChild(nodes_count_label);
 					container__nodes_count.appendChild(nodes_count_div);
 
+					container__pruning.appendChild(pruning_label);
+					container__pruning.appendChild(pruning_div);
 					icon_menu.appendChild(undo_arrow);
 					icon_menu.appendChild(autoplay);
 					icon_menu.appendChild(forward_arrow);
 					icon_menu.appendChild(container__nodes_count);
+					icon_menu.appendChild(container__pruning);
+
 
 					console.log('ChessBot loaded');
 
@@ -314,13 +323,13 @@
 									if(property === 'finished'){
 										workerInProgress = false;
 										forward_arrow.classList.remove('active');
-										debugger;
 										if(progressBar.nodeName === 'DIV'){
 											progressBar.style.width = "0";
 										}else if(progressBar.nodeName === 'PROGRESS'){
 											progressBar.value = "0";
 										}
 										icon_menu.removeChild(progressBar);
+										positions.ai_output_pruning_sum = 0;
 										console.log('finished');
 										document.dispatchEvent(new Event('workerReady'));
 									}
@@ -336,6 +345,10 @@
 									}
 									if(property === 'progressBar'){
 										positions.tools.ai_output_progressBar(e.data[0]);
+										return;
+									}
+									if(property === 'pruning'){
+										positions.tools.ai_output_pruning(e.data[0]);
 										return;
 									}
 								}
@@ -536,6 +549,8 @@
 
 					positions.tools.set_output_nodes_checked(nodes_count_div);
 					positions.tools.set_output_progressBar(progressBar);
+					positions.tools.set_output_pruning(pruning_div);
+
 
 					positions.render();
 					positions.set_possible_moves();

@@ -2,6 +2,8 @@ importScripts('main.js');
 importScripts('chessBot.js');
 addEventListener('message', function(e){
 
+	self.isWorker = true;
+
 	var positionsPartialCopy = e.data[0],
 		algorithm = e.data[1],
 		obj = e.data[2],
@@ -14,9 +16,6 @@ addEventListener('message', function(e){
 		chessBot = new ChessBot(positionsFullCopy);
 		
 	chessBot.set_side(positionsFullCopy.current_side);
-
-	self.isWorker = true;
-
 
 	switch(algorithm){
 		case 'minimax':

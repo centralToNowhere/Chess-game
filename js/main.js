@@ -995,11 +995,15 @@ var positions = {
 
 		    			positions.ai_output_fraction_sum += fraction;
 
-		    				requestAnimationFrame(function(time){
+		    				if(typeof window !== 'undefined' && typeof window.requestAnimationFrame !== 'undefined'){
 
-		    					positions.ai_progressBar_elem.style.width = (positions.ai_output_fraction_sum * 100) + '%';
+		    					requestAnimationFrame(function(time){
 
-		    				});
+		    						positions.ai_progressBar_elem.style.width = (positions.ai_output_fraction_sum * 100) + '%';
+
+		    					});
+
+		    				}
 
 		    		}
 
@@ -1013,11 +1017,15 @@ var positions = {
 
 		    			positions.ai_output_fraction_sum += fraction;
 
-	    				requestAnimationFrame(function(time){
+	    				if(typeof window !== 'undefined' && typeof window.requestAnimationFrame !== 'undefined'){
 
-	    					positions.ai_progressBar_elem.value = (positions.ai_output_fraction_sum * 100) + '';
+	    					requestAnimationFrame(function(time){
 
-	    				});
+	    						positions.ai_progressBar_elem.value = (positions.ai_output_fraction_sum * 100);
+
+	    					});
+
+	    				}
 
 		    		}
 
@@ -1025,16 +1033,10 @@ var positions = {
 
 		    },
 
-		    ai_output_progressBar: function(fraction){
+		    set_output_pruning: function(elem){
 
-    			positions.ai_output_fraction_sum += fraction;
+		    	positions.ai_pruning_elem = elem;
 
-				requestAnimationFrame(function(time){
-
-					positions.ai_progressBar_elem.style.width = (positions.ai_output_fraction_sum * 100) + '%';
-
-				});
-				
 		    },
 
 		    ai_output_nodes_checked: function(call){
@@ -1054,6 +1056,21 @@ var positions = {
 
 		    	}
 
+		    },
+
+		    ai_output_pruning: function(percentage){
+
+		    	positions.ai_output_pruning_sum += percentage;
+
+		    	if(typeof window !== 'undefined' && typeof window.requestAnimationFrame !== 'undefined'){
+
+		    		requestAnimationFrame(function(time){
+
+		    			positions.ai_pruning_elem.innerText = (positions.ai_output_pruning_sum * 100).toFixed(2) + '%';
+
+		    		});
+
+		    	}
 		    }
 
 		},
@@ -1412,8 +1429,9 @@ var positions = {
 	    ai_side: '',
 	    ai_nodes_checked_elem: {},
 	    ai_progressBar_elem: {},
+	    ai_pruning_elem: {},
 	    ai_output_fraction_sum: 0,
-	    ai_output_progressBar_type: "",
+	    ai_output_pruning_sum: 0,
 	    AI: false,
 	    moves_stack: [],
 	};
