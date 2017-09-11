@@ -138,6 +138,17 @@ var ChessBot = (function(){
 
 		};
 
+		this.clearPrevSiblings = function(branchList, index){
+
+			for(var key in branchList){
+				if( +key < index && +key !== -1 && +key !== -2){
+					branchList[key] = null;
+				}
+			}
+
+		};
+
+
 		this.ordering  = function(arr){
 			var i = 0;
 			var count = arr.length;
@@ -678,6 +689,7 @@ var ChessBot = (function(){
 							if(res > branch[0][0]){
 								branch[0][0] = res;
 								branch[1][-2] = i;
+								this.clearPrevSiblings(branch[1], i);
 							}
 							// value > alpha
 							if(res > branch[0][1]){
@@ -698,7 +710,7 @@ var ChessBot = (function(){
 									}
 
 									// delete child node
-									branch[1][i] = null;
+									branch[1][i] = null;	
 
 									// object.current_side = object.current_side === 'white' ? 'black' : 'white';
 
@@ -732,6 +744,7 @@ var ChessBot = (function(){
 							if(res < branch[0][0]){
 								branch[0][0] = res;
 								branch[1][-2] = i;
+								this.clearPrevSiblings(branch[1], i);
 							}
 							// value < beta
 							if(res < branch[0][2]){
@@ -757,6 +770,7 @@ var ChessBot = (function(){
 							if(res > branch[0][0]){
 								branch[0][0] = res;
 								branch[1][-2] = i;
+								this.clearPrevSiblings(branch[1], i);
 							}
 							// value > alpha
 							if(res > branch[0][1]){
@@ -769,6 +783,7 @@ var ChessBot = (function(){
 							if(res < branch[0][0]){
 								branch[0][0] = res;
 								branch[1][-2] = i;
+								this.clearPrevSiblings(branch[1], i);
 							}
 							// value < beta
 							if(res < branch[0][2]){
@@ -969,6 +984,7 @@ var ChessBot = (function(){
 							if(branch[0][0] < res){
 								branch[0][0] = res;
 								branch[1][-2] = i;
+								this.clearPrevSiblings(branch[1], i);
 							}
 							// if alpha < result
 							if(branch[0][1] < res){
@@ -979,6 +995,7 @@ var ChessBot = (function(){
 							if(branch[0][0] > res){
 								branch[0][0] = res;
 								branch[1][-2] = i;
+								this.clearPrevSiblings(branch[1], i);
 							}
 							// if beta > result
 							if(branch[0][2] > res){
@@ -1021,6 +1038,7 @@ var ChessBot = (function(){
 							if(branch[0][0] < res){
 								branch[0][0] = res;
 								branch[1][-2] = i;
+								this.clearPrevSiblings(branch[1], i);
 							}
 							// if alpha < value
 							if(branch[0][1] < res){
@@ -1031,6 +1049,7 @@ var ChessBot = (function(){
 							if(branch[0][0] > res){
 								branch[0][0] = res;
 								branch[1][-2] = i;
+								this.clearPrevSiblings(branch[1], i);
 							}
 							// if beta > value 
 							if(branch[0][2] > res){
