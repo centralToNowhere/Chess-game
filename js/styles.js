@@ -322,6 +322,7 @@
 									var property = e.data.shift();
 									if(property === 'finished'){
 										workerInProgress = false;
+										debugger;
 										forward_arrow.classList.remove('active');
 										if(progressBar.nodeName === 'DIV'){
 											progressBar.style.width = "0";
@@ -330,6 +331,7 @@
 										}
 										icon_menu.removeChild(progressBar);
 										positions.ai_output_pruning_sum = 0;
+										positions.ai_output_researched_sum = 0;
 										console.log('finished');
 										document.dispatchEvent(new Event('workerReady'));
 									}
@@ -344,11 +346,11 @@
 										return;
 									}
 									if(property === 'progressBar'){
-										positions.tools.ai_output_progressBar(e.data[0]);
+										positions.tools.ai_output_progressBar(e.data[0], e.data[1]);
 										return;
 									}
 									if(property === 'pruning'){
-										positions.tools.ai_output_pruning(e.data[0]);
+										positions.tools.ai_output_pruning(e.data[0], e.data[1]);
 										return;
 									}
 								}

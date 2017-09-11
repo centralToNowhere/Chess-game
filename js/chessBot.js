@@ -43,22 +43,27 @@ var ChessBot = (function(){
 			var calls = 0,
 				tmp = 0,
 				fractionSum = 0,
-				throttleFn = function(fn, fraction, isLast){
+				researchedFractionSum = 0,
+				throttleFn = function(fn, fraction, researchedFraction, isLast){
 					if(fraction){
 						fractionSum += fraction;
 					}
+					if(researchedFraction){
+						researchedFractionSum += researchedFraction;
+					}
 					// last tick - show all amount of remainng nodes 
 					if(isLast === true){
-						debugger;
-						(typeof fraction != 'undefined' ? fn.call(self, fractionSum) : fn.call(self));
+						fn.call(self, fractionSum, researchedFractionSum);
 						fractionSum = 0;
+						researchedFractionSum = 0;
 						return;
 					}
 
 					if(calls >= tmp){
 						tmp = 1.7070* Math.pow(calls, 0.9673);
-						(typeof fraction != 'undefined' ? fn.call(self, fractionSum) : fn.call(self));
+						fn.call(self, fractionSum, researchedFractionSum);
 						fractionSum = 0;
+						researchedFractionSum = 0;
 					}
 					calls++;
 
@@ -69,16 +74,14 @@ var ChessBot = (function(){
 		};
 
 		if(self.isWorker){
-			debugger;
 			var postNodes = throttle(function(){
 					self.postMessage(['guiUpdate', 'nodes', object.call]);
 				}),
-				progressBar = throttle(function(fraction){
-					self.postMessage(['guiUpdate', 'progressBar', fraction]);
+				progressBar = throttle(function(fraction, fractionResearched){
+					self.postMessage(['guiUpdate', 'progressBar', fraction, fractionResearched]);
 				}),
-				postPruning = throttle(function(fraction){
-					debugger;
-					self.postMessage(['guiUpdate', 'pruning', fraction]);
+				postPruning = throttle(function(fraction, fractionResearched){
+					self.postMessage(['guiUpdate', 'pruning', fraction, fractionResearched]);
 				});
 		}
 
@@ -459,9 +462,9 @@ var ChessBot = (function(){
 				self.postMessage(['positions', 'ai_side', '']);
 
 				// show remaining nodes amount on last tick
-				postNodes(undefined, true);
-				progressBar(0, true);
-				postPruning(0, true);
+				postNodes(undefined, 0, true);
+				progressBar(0, 0, true);
+				postPruning(0, 0, true);
 
 				// 50 ms to show last tick on progressbar, then hide it
 				setTimeout(function(){
@@ -522,10 +525,12 @@ var ChessBot = (function(){
 
 			initial_node[1][-1] = initial_node; // link to self object
 			initial_node[1][-2] = 0;
-			var tree = branch = initial_node[1];
-			var res = 0;
-			var calls = 0;
-			var move = [];
+			var tree = branch = initial_node[1],
+				res = 0,
+				calls = 0,
+				move = [],
+				research = false,
+				researchDepthMarker = -1;
 
 
 			//build nodes (branch  - child nodes) 
@@ -553,7 +558,7 @@ var ChessBot = (function(){
 
 					if(this.pruning(branch) === 0){
 						if(progressBar && postPruning){
-							progressBar((arr.length - i) * fraction);
+							(research ? progressBar(0, (arr.length - i) * fraction) : progressBar((arr.length - i) * fraction));
 							postPruning((arr.length - i) * fraction);
 						}
 						break;
@@ -631,6 +636,11 @@ var ChessBot = (function(){
 
 								//re-search
 								if(i !== 0 &&  res > branch[0][1] && res < branch[0][2]){
+									if(researchDepthMarker === -1){
+										research = true;
+										researchDepthMarker = current_depth-1;
+									}
+
 
 									// delete child node
 									branch[1][i] = null;
@@ -646,6 +656,13 @@ var ChessBot = (function(){
 									trig = 1;
 
 									half_move.apply(this, [i]);
+
+									if(researchDepthMarker === current_depth){
+										researchDepthMarker = -1;
+										//re-search ends
+										research = false;
+									}
+
 
 									// object.current_side = object.current_side === 'white' ? 'black' : 'white';
 
@@ -675,6 +692,10 @@ var ChessBot = (function(){
 								//re-search
 								if(i !== 0 && res > branch[0][1] && res < branch[0][2]){
 
+									if(researchDepthMarker === -1){
+										research = true;
+										researchDepthMarker = current_depth-1;
+									}
 
 									// delete child node
 									branch[1][i] = null;
@@ -692,6 +713,13 @@ var ChessBot = (function(){
 									half_move.apply(this, [i]); 
 
 									// object.current_side = object.current_side === 'white' ? 'black' : 'white';
+
+									if(researchDepthMarker === current_depth){
+										researchDepthMarker = -1;
+										//re-search ends
+										research = false;
+									}
+
 
 									res = branch[i][0][0]; //value
 									tmp_branch = branch;
@@ -751,7 +779,7 @@ var ChessBot = (function(){
 
 						// update progressBar
 						if(progressBar){
-							progressBar(tmp_branch[-1][6]);
+							(research ? progressBar(0, tmp_branch[-1][6]) : progressBar(tmp_branch[-1][6]));
 						}
 
 
@@ -839,7 +867,6 @@ var ChessBot = (function(){
 			// }
 			//build nodes
 			var half_move = function half_move(){
-
 				object.current_move = 'true';
 				var arr = this.all_moves_side_func(object.current_side);
 

@@ -984,22 +984,29 @@ var positions = {
 		    	positions.ai_nodes_checked_elem = elem;
 
 		    },
-
 		    set_output_progressBar: function(elem){
 
 		    	positions.ai_progressBar_elem = elem;
 
 		    	if(elem.nodeName === 'DIV'){
 
-		    		positions.tools.ai_output_progressBar = function(fraction){
+		    		positions.tools.ai_output_progressBar = function(fraction, scoutReserchedNodes){
 
-		    			positions.ai_output_fraction_sum += fraction;
+		    			if(scoutReserchedNodes){
+		    				positions.ai_output_researched_sum += scoutReserchedNodes;
+		    			}
+		    			if(fraction){
+		    				positions.ai_output_fraction_sum += fraction;
+		    			}
+		    			var max = positions.ai_output_researched_sum > 0 ? (positions.ai_output_researched_sum + 1) : 1;
+		    			var value = (positions.ai_output_fraction_sum + positions.ai_output_researched_sum) / max;
+
 
 		    				if(typeof window !== 'undefined' && typeof window.requestAnimationFrame !== 'undefined'){
 
 		    					requestAnimationFrame(function(time){
 
-		    						positions.ai_progressBar_elem.style.width = (positions.ai_output_fraction_sum * 100) + '%';
+		    						positions.ai_progressBar_elem.style.width = (value * 100) + '%';
 
 		    					});
 
@@ -1013,15 +1020,24 @@ var positions = {
 
 		    		positions.ai_progressBar_elem.setAttribute("max", "100");
 		    			
-		    		positions.tools.ai_output_progressBar = function(fraction){
+		    		positions.tools.ai_output_progressBar = function(fraction, scoutReserchedNodes){
 
-		    			positions.ai_output_fraction_sum += fraction;
+		    			if(scoutReserchedNodes){
+		    				//positions.ai_output_researched_sum = pruning + common evaluated nodes summary for research
+		    				positions.ai_output_researched_sum += scoutReserchedNodes;
+		    			}
+		    			if(fraction){
+		    				//positions.ai_output_fraction_sum = pruning + common evaluated nodes summary for search; 0 < positions.ai_output_fraction_sum  < 1;
+		    				positions.ai_output_fraction_sum += fraction;
+		    			}
+		    			var max = positions.ai_output_researched_sum > 0 ? (positions.ai_output_researched_sum + 1) : 1;
+		    			var value = (positions.ai_output_fraction_sum + positions.ai_output_researched_sum) / max;
 
 	    				if(typeof window !== 'undefined' && typeof window.requestAnimationFrame !== 'undefined'){
 
 	    					requestAnimationFrame(function(time){
 
-	    						positions.ai_progressBar_elem.value = (positions.ai_output_fraction_sum * 100);
+	    						positions.ai_progressBar_elem.value = (value * 100);
 
 	    					});
 
@@ -1058,15 +1074,25 @@ var positions = {
 
 		    },
 
-		    ai_output_pruning: function(percentage){
+		    ai_output_pruning: function(fraction, scoutReserchedNodes){
 
-		    	positions.ai_output_pruning_sum += percentage;
+		    	if(scoutReserchedNodes){
+		    		//positions.ai_output_researched_sum = pruning  + evaluated nodes summary for research
+		    		// positions.ai_output_researched_sum + 1 = pruning  + common evaluated nodes summary for search + research
+		    		positions.ai_output_researched_sum += scoutReserchedNodes;
+		    	}
+		    	if(fraction){
+		    		//positions.ai_output_pruning_sum - pruning summary for search + research
+		    		positions.ai_output_pruning_sum += fraction;
+		    	}
+		    	var max = positions.ai_output_researched_sum > 0 ? (positions.ai_output_researched_sum + 1) : 1;
+		    	var value = positions.ai_output_pruning_sum / max;
 
 		    	if(typeof window !== 'undefined' && typeof window.requestAnimationFrame !== 'undefined'){
 
 		    		requestAnimationFrame(function(time){
 
-		    			positions.ai_pruning_elem.innerText = (positions.ai_output_pruning_sum * 100).toFixed(2) + '%';
+		    			positions.ai_pruning_elem.innerText = (value * 100).toFixed(2) + '%';
 
 		    		});
 
@@ -1430,8 +1456,10 @@ var positions = {
 	    ai_nodes_checked_elem: {},
 	    ai_progressBar_elem: {},
 	    ai_pruning_elem: {},
+	    ai_nodes_checked_sum: 0,
 	    ai_output_fraction_sum: 0,
 	    ai_output_pruning_sum: 0,
+	    ai_output_researched_sum: 0,
 	    AI: false,
 	    moves_stack: [],
 	};
