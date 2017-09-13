@@ -146,13 +146,13 @@
 								positions.subscribe();
 								positions.render();
 								positions.set_possible_moves();
-								var e = new Event('click_king');
-								var king = document.querySelector('.king_' + positions.current_side);
+								// var e = new Event('click_king');
+								// var king = document.querySelector('.king_' + positions.current_side);
 
-								king.addEventListener('click_king', function(){
-									this.click();
-									document.body.click();
-								});
+								// king.addEventListener('click_king', function(){
+								// 	this.click();
+								// 	document.body.click();
+								// });
 								var id = Math.random().toString().split('.')[1].slice(0, 3).toString();
 
 								chat.chat_subscribe(id, positions.name);
@@ -402,9 +402,9 @@
 						e.stopPropagation();
 
 						// check if game is already finished (if mate)
-						var e = new Event('click_king');
 						var king = document.querySelector('.king_' + positions.current_side);
-						king.dispatchEvent(e);
+						king.click();
+						document.body.click();
 
 						if(window.Worker && !workerInProgress){
 
@@ -561,9 +561,7 @@
 					positions.set_possible_moves();
 
 					//bad hack
-					var e = new Event('click_king');
 					var king = document.querySelector('.king_' + positions.current_side);
-
 					king.addEventListener('click_king', function(){
 						this.click();
 						document.body.click();
