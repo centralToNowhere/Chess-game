@@ -136,22 +136,31 @@ http.createServer(function(req, res) {
 //     }
 
 // })(), 1000); // 15 min
+console.log('Server is running');
+writeDB({}, 'wx'); // create data.json if doesn't exist / do nothing if exists
 scanActiveGame();
 
-function writeDB(gameObject){
-    console.log('writeDB');
+function writeDB(gameObject, flag){
     writeDB.queue = writeDB.queue || [];
     writeDB.runing = writeDB.runing || false;
 
     if(typeof gameObject !== 'undefined'){
-        writeDB.queue.push(gameObject);
+        options = {
+            flags: flag || 'w'
+        };
+        writeDB.queue.push([gameObject, options]);
     }
 
     if(!writeDB.runing && writeDB.queue.length !== 0){
         writeDB.runing = true;
-        var writeStream = fs.createWriteStream(__dirname + DATA);
-        writeStream.write(JSON.stringify(gameObject));
+        var writeStream = fs.createWriteStream(__dirname + DATA, writeDB.queue[0][1]);
+        writeStream.write(JSON.stringify(writeDB.queue[0][0]));
         writeStream.end(function(){
+            writeDB.queue.shift();
+            writeDB.runing = false;
+            writeDB();
+        });
+        writeStream.on('error',function(e){
             writeDB.queue.shift();
             writeDB.runing = false;
             writeDB();
@@ -164,10 +173,13 @@ function scanActiveGame(games_old){
     if(games_old == undefined){
         games_old = {};
     }
-    var games = '';
-    var global = '';
-    var save = [];
-    var readStream = fs.createReadStream(__dirname + DATA);
+    var games = '',
+        global = '',
+        save = [],
+        readStream = null;
+
+    readStream = fs.createReadStream(__dirname + DATA);
+
     readStream
         .on('readable', function(){
             games = onReadable(games, readStream);
@@ -209,7 +221,6 @@ function deleteGame(save, games_old){
             delete games_old[i];
         }
     }
-    console.log('here');
     writeDB(games_old);
     // var writeStream = fs.createWriteStream(__dirname + DATA);
     // writeStream.write(JSON.stringify(games_old));
@@ -341,7 +352,7 @@ function auth_validate(data, res){
                 readStream.destroy();
             });
     }else{
-        console.log('bad,', data.name, data.password);
+        console.log('invalid data,', data.name, data.password);
         res.end("data-error");
     }
 }
