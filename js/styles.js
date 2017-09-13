@@ -32,7 +32,7 @@
 		}
 		if(document.querySelector('#check_multi').checked === true){
 
-			//with human
+			//multiplayer
 			(function(){
 				var xhr = new XMLHttpRequest();
 				xhr.open('POST', '/auth', true);
@@ -96,21 +96,25 @@
 							/// So we have autonomous chatbox.
 
 							loadScript('js/chat.js', function(){
+
+								var chatBox = new MessageBox();
+								chat.set_pushFunction(chatBox, chatBox.push);
+								positions.tools.set_messageBoxModule(chatBox);
+
 								document.querySelector('.chat-container').style.display = "block";
 								document.querySelector('.ai-settings__x-mark-menu p').innerHTML = 'Chat';
-
-								window.chatBox = new MessageBox();
 									
 								var onsubmit = function(message){
 									var game = positions.name;
 									console.log('Submit', id, game);
 									chat.chat_publish(id, game, message);
 								};
-								chatBox.submit(onsubmit);
+
+								positions.messageBoxModule.submit(onsubmit);
 
 								if(t.password_player2 !== undefined){
 									message = 'player 2 password: ' + t.password_player2;
-									chatBox.push(message);
+									positions.messageBoxModule.push(message);
 								}
 
 								if(t.win !== undefined){
@@ -132,7 +136,7 @@
 											}
 											break;
 									}
-									chatBox.push(message);
+									positions.messageBoxModule.push(message);
 								}
 
 
@@ -162,7 +166,7 @@
 				}
 			}.apply(this));
 		}else{
-			// with AI
+			// single
 			(function(){
 				positions.game_mode = 'single';
 				positions.current_move = true;
@@ -322,7 +326,6 @@
 									var property = e.data.shift();
 									if(property === 'finished'){
 										workerInProgress = false;
-										debugger;
 										forward_arrow.classList.remove('active');
 										if(progressBar.nodeName === 'DIV'){
 											progressBar.style.width = "0";
@@ -589,6 +592,11 @@
 
 var chat = (function(){
 	return {
+		set_pushFunction: function(obj, fn){
+
+			this.pushFunction = fn.bind(obj);
+
+		},
 		chat_subscribe: function(id, game){
 			var xhr = new XMLHttpRequest();
 			xhr.open('POST', '/chat_subscribe', true);
@@ -600,19 +608,19 @@ var chat = (function(){
 
 			xhr.onload = function(){
 				try{
-					console.log('RESPONSE', this.responseText);
-					var data = JSON.parse(this.responseText);
+					console.log('RESPONSE', xhr.responseText);
+					var data = JSON.parse(xhr.responseText);
 					var message = data.message !== undefined ? data.message : '';
 					var whose = data.whose;
 					// var chatBox = new MessageBox();
 
-					chatBox.push(message, whose);
+					this.pushFunction(message, whose);
 
 				}catch(e){
 					console.log(e);
 				}
 				chat.chat_subscribe(id, game);
-			}
+			}.bind(this);
 		},
 
 		chat_publish:	function(id, game, message){

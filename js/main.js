@@ -5,6 +5,7 @@ var positions = {
 			var updates_container = {};
 			updates_container.updates  = updates;
 
+
 			// stack of commited moves
 			this.moves_stack.push(updates_container);
 
@@ -638,7 +639,6 @@ var positions = {
 										}
 										
 										// if stalemate
-
 										if(all_moves_side_length === 0 && this.check === ''){
 											this.win = 'stalemate';
 											this.game_status = 'end';
@@ -984,6 +984,7 @@ var positions = {
 		    	positions.ai_nodes_checked_elem = elem;
 
 		    },
+
 		    set_output_progressBar: function(elem){
 
 		    	positions.ai_progressBar_elem = elem;
@@ -1046,6 +1047,12 @@ var positions = {
 		    		}
 
 		    	}
+
+		    },
+
+		    set_messageBoxModule: function(obj){
+
+		    	positions.messageBoxModule = obj;
 
 		    },
 
@@ -1138,7 +1145,6 @@ var positions = {
 			xhr.send('');
 		},
 		set_game_status: function(){
-			//var chatBox = chatBox !== undefined ? chatBox : {};
 			var message = '';
 			switch(positions.game_status){
 				case 'end':
@@ -1148,7 +1154,11 @@ var positions = {
 					}else if(positions.win === 'stalemate'){
 						message += 'Stalemate.';
 					}
-					chatBox.push(message);
+					if(positions.messageBoxModule){
+						positions.messageBoxModule.push(message)
+					}
+
+					positions.modal(message);
 					break;
 			}
 		},
@@ -1442,6 +1452,10 @@ var positions = {
 	    	king_white: true,
 	    	king_black: true
 	    },
+	    modal: {
+	    	//modal
+	    },
+	    messageBoxModule: null,
 	    password: '',
 	    move_status: null,
 	    current_side: 'black',
@@ -1461,7 +1475,7 @@ var positions = {
 	    ai_output_pruning_sum: 0,
 	    ai_output_researched_sum: 0,
 	    AI: false,
-	    moves_stack: [],
+	    moves_stack: []
 	};
 
 
