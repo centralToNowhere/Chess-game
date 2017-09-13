@@ -41,7 +41,9 @@ var MessageBox = (function(){
 			console.log('NODE', node_to_push);
 			var time = new Date(), 
 				time_block = document.createElement('div');
-			time = time.getHours() + ":" + time.getMinutes() + ":" + time.getSeconds();
+
+			time = (time.getHours() < 10 ? '0' : '') + time.getHours() + ":" + (time.getMinutes() < 10 ? '0' : '') + time.getMinutes() + ":" + (time.getSeconds() < 10 ? '0' : '') + time.getSeconds();
+			
 			time_block.className = "time_block";
 			time_block.innerHTML = time;
 			node_to_push.innerHTML = message;
