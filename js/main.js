@@ -920,7 +920,7 @@ var positions = {
 
 								if(positions.data[origin][0] !== m[0] || positions.data[origin][1] !== m[1]){
 									for(var h in positions.data){
-										if(positions.data[h][0] === m[0] &&  positions.data[h][1] === m[1]){
+										if(positions.data[h][0] === m[0] &&  positions.data[h][1] === m[1] && h != last_update.transform){
 											return h;
 										}
 									}
