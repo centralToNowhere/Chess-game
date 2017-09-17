@@ -406,7 +406,9 @@ var ChessBot = (function(){
 				i = object.data[t][0];
 				j = object.data[t][1];
 				piece_type = t.split('_')[0];
-				piece_color = t.split('_')[t.split('_').length-1];
+
+				// t.split('_')[1] case - queen_white_2
+				piece_color = (t.split('_')[t.split('_').length-1] === 'black' || t.split('_')[t.split('_').length-1] === 'white') ? t.split('_')[t.split('_').length-1] : t.split('_')[1];
 				if(i !== null){
 					if(eval_obj.material){
 						abs_value = this.cost[piece_type] === undefined ? this.cost[piece_type.substr(0, piece_type.length-1)] : this.cost[piece_type];
