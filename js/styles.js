@@ -553,6 +553,39 @@
 					forward_arrow.addEventListener('click', forward_func);
 					autoplay.addEventListener('click', autoplay_func);
 
+					// set arrow keys
+					document.addEventListener('keydown', function(e){
+		    			if((e.keyCode == '39' || e.keyCode == '68') && !e.ctrlKey && !e.shiftKey && !e.altKey){
+	    				  	e = e || window.e;
+	    					if (e.preventDefault) { 
+	    				    	e.preventDefault(); 
+	    				  	}else{ 
+	    				    	e.returnValue = false;
+	    					}
+							forward_func.call(forward_arrow, e);
+							return;
+		    			}
+		    			if((e.keyCode == '37' || e.keyCode == '65') && !e.ctrlKey && !e.shiftKey && !e.altKey){
+	    				  	e = e || window.e;
+	    					if (e.preventDefault) { 
+	    				    	e.preventDefault(); 
+	    				  	}else{ 
+	    				    	e.returnValue = false;
+	    					}
+	    					undo_func.call(undo_arrow, e);
+	    					return;
+		    			}
+		    			if(e.keyCode == '82' && !e.ctrlKey && !e.shiftKey && !e.altKey){
+	    				  	e = e || window.e;
+	    					if (e.preventDefault) { 
+	    				    	e.preventDefault(); 
+	    				  	}else{ 
+	    				    	e.returnValue = false;
+	    					}
+	    					autoplay_func.call(autoplay, e);
+	    					return;
+		    			}
+					});
 
 					/// show board
 					document.querySelector('.container-fluid ').style.display = 'block';
@@ -592,6 +625,7 @@
 						});
 
 					});
+
 					document.body.addEventListener('click', function(){
 						var lists = document.querySelectorAll('.ai-settings__item-select-list');
 						lists.forEach(function(list){
@@ -604,7 +638,6 @@
 						});
 
 					});
-
 
 					////??????? scale board
 					scale();
