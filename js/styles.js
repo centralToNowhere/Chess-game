@@ -174,11 +174,12 @@
 
 				loadScript('js/chessBot.js', function(){
 					
+
 					//AI init
 					var bot = new ChessBot(positions),
 						workerInProgress = false;
 
-					// creates ui for AI
+										// creates ui for AI
 					var board = document.querySelector('.board-container'),
 						icon_menu = document.querySelector('.container__icon-menu'),
 						ai_settings = document.querySelector('.ai-settings'),
@@ -206,7 +207,7 @@
 					forward_arrow.classList.add('container__forward-arrow');
 					autoplay.classList.add('container__auto');
 					ai_settings.appendChild(ai_settings_content); 
-					ai_settings_content.outerHTML = '<ul class="ai-settings__list">Search algorithm <li class="ai-settings__item">Minimax <input type="radio" name="check_algo" value="minimax" id="algo_minimax"> <label for="algo_minimax"></label> </li><li class="ai-settings__item">Alpha-Beta <input type="radio" name="check_algo" value="alphaBeta" id="algo_alphaBeta" checked> <label for="algo_alphaBeta"></label> <ul class="ai-settings__list"> <li class="ai-settings__item">Ordering <input type="checkbox" id="algo_alphaBeta_ordering" checked> <label for="algo_alphaBeta_ordering"></label> </li></ul> </li><li class="ai-settings__item">NegaScout <input type="radio" name="check_algo" value="negaScout" id="algo_negaScout"> <label for="algo_negaScout"></label> </li><li class="ai-settings__item"> Depth <div class="ai-settings__item-select-div"> <select name="depth"> <option value="3">3</option> <option value="4" selected>4</option> <option value="5">5</option> <option value="6">6</option> </select> <div class="ai-settings__item-select">4</div><ul class="ai-settings__item-select-list"> <li class="ai-settings__item-select-item" data-value="3">3</li><li class="ai-settings__item-select-item" data-value="4">4</li><li class="ai-settings__item-select-item" data-value="5">5</li><li class="ai-settings__item-select-item" data-value="6">6</li></ul> </div></li><li class="ai-settings__item">Evaluation <ul class="ai-settings__list"> <li class="ai-settings__item"> Material <input type="checkbox" id="check_eval_material" checked> <label for="check_eval_material"></label> </li><li class="ai-settings__item"> Position <input type="checkbox" id="check_eval_position" checked> <label for="check_eval_position"></label> </li></ul> </li></ul>';
+					ai_settings_content.outerHTML = '<ul class="ai-settings__list">Search algorithm <li class="ai-settings__item">Minimax <input type="radio" name="check_algo" value="minimax" id="algo_minimax"> <label for="algo_minimax"></label> </li><li class="ai-settings__item">Alpha-Beta <input type="radio" name="check_algo" value="alphaBeta" id="algo_alphaBeta" checked> <label for="algo_alphaBeta"></label> <ul class="ai-settings__list"> <li class="ai-settings__item">Ordering <input type="checkbox" id="algo_alphaBeta_ordering" checked> <label for="algo_alphaBeta_ordering"></label> </li></ul> </li><li class="ai-settings__item">NegaScout <input type="radio" name="check_algo" value="negaScout" id="algo_negaScout"> <label for="algo_negaScout"></label> </li><li class="ai-settings__item"> Depth <div class="ai-settings__item-select-div"> <select name="depth"> <option value="2">2</option> <option value="3" selected>3</option> <option value="4">4</option> <option value="5">5</option> </select> <div class="ai-settings__item-select">3</div><ul class="ai-settings__item-select-list"> <li class="ai-settings__item-select-item" data-value="2">2</li><li class="ai-settings__item-select-item" data-value="3">3</li><li class="ai-settings__item-select-item" data-value="4">4</li><li class="ai-settings__item-select-item" data-value="5">5</li></ul> </div></li><li class="ai-settings__item">Evaluation <ul class="ai-settings__list"> <li class="ai-settings__item"> Material <input type="checkbox" id="check_eval_material" checked> <label for="check_eval_material"></label> </li><li class="ai-settings__item"> Position <input type="checkbox" id="check_eval_position" checked> <label for="check_eval_position"></label> </li></ul> </li></ul>';
 
 					nodes_count_label.textContent = "Checked nodes: ";
 					pruning_label.textContent = "Cut-offs: ";
@@ -221,18 +222,179 @@
 					icon_menu.appendChild(autoplay);
 					icon_menu.appendChild(forward_arrow);
 					icon_menu.appendChild(container__nodes_count);
-					icon_menu.appendChild(container__pruning);
+
+					var undo_func = function(e){
+							this.classList.add('active');
+							var that = this;
+							e.stopPropagation();
+							if(window.Worker && workerInProgress){
+								return;
+							}else{
+								setTimeout(function(){
+									positions.tools.undo();
+									positions.render();
+									that.classList.remove('active');
+								}, 0);
+							}
+
+						},
+						forward_func = function(e){
+							this.classList.add('active');
+							var that = this;
+							e.stopPropagation();
+
+							if(window.Worker && !workerInProgress){
+
+								if(positions.win === "black" || positions.win === "white"){
+
+									that.classList.remove('active');
+									return;
+
+								}else{
+
+									positions.tools.ai_move();
+
+								}
+
+							}else if(workerInProgress){
+
+								return;
+
+							}else{
+								setTimeout(function(){
+
+									if(positions.win === "black" || positions.win === "white"){
+
+										that.classList.remove('active');
+										return;
+
+
+									}else{
+
+										positions.tools.ai_move();
+										that.classList.remove('active');
+
+									}
+
+								}, 0);
+							}
+						},
+
+						workerCircle = function(){
+
+							if(positions.win === ""){
+
+								positions.tools.ai_move();
+
+							}else{
+
+								document.removeEventListener('workerReady', workerCircle);
+								this.classList.toggle('active');
+
+								undo_arrow.addEventListener('click', undo_func);
+								forward_arrow.addEventListener('click', forward_func);
+							}
+
+						}.bind(autoplay),
+
+						autoplay_func =	function(e){
+							e.stopPropagation();
+							this.classList.toggle('active');
+
+							var circle = function(){
+
+								if(autoplay_func.isWorking){
+									
+									if(positions.win === ""){
+
+										positions.tools.ai_move();
+										setTimeout(circle, 0);
+
+
+									}else{
+
+										autoplay.classList.toggle('active');
+
+										undo_arrow.addEventListener('click', undo_func);
+										forward_arrow.addEventListener('click', forward_func);
+
+									}
+
+								}
+
+							};
+
+							if(this.classList.contains('active')){
+								undo_arrow.removeEventListener('click', undo_func);
+								forward_arrow.removeEventListener('click', forward_func);
+
+								if(window.Worker){
+									
+									document.addEventListener('workerReady', workerCircle);
+
+									if(!workerInProgress){
+										workerCircle();
+									}
+
+								}else{
+
+									setTimeout(function(){
+										autoplay_func.isWorking = true;
+										circle();
+									}, 0);
+
+								}
+
+							}else{
+								if(window.Worker){
+									
+									document.removeEventListener('workerReady', workerCircle);
+									
+								}else{
+
+									autoplay_func.isWorking = false;
+
+								}
+
+								undo_arrow.addEventListener('click', undo_func);
+								forward_arrow.addEventListener('click', forward_func);
+
+							}
+
+						};
+
+					// no gui updates - no pruning
+					if(window.Worker){
+						icon_menu.appendChild(container__pruning);
+					}
+
+					//start metrix
+					pruning_div.textContent = '0.00%';
+					nodes_count_div.textContent = '0';
 
 
 					console.log('ChessBot loaded');
 
 					document.body.addEventListener('AI_turn', function(){
 
+						// check if game is already finished (if mate)
+						var king = document.querySelector('.king_' + positions.current_side);
+						king.click();
+						document.body.click();
+
+						if(positions.win !== ""){
+							pruning_div.textContent = '0.00%';
+							nodes_count_div.textContent = '0';
+							return;
+						}
+
 						var obj = {},
 							// bot = {},
 							algorithm = document.querySelector('input[name="check_algo"]:checked').value;
 
-						//set progressBar
+						//reset metricks
+						pruning_div.textContent = '0.00%';
+						nodes_count_div.textContent = '0';
 						progressBar.value = 0;
 						icon_menu.appendChild(progressBar);
 
@@ -327,6 +489,12 @@
 									if(property === 'finished'){
 										workerInProgress = false;
 										forward_arrow.classList.remove('active');
+
+										// check if game is already finished (if mate)
+										var king = document.querySelector('.king_' + positions.current_side);
+										king.click();
+										document.body.click();
+
 										if(progressBar.nodeName === 'DIV'){
 											progressBar.style.width = "0";
 										}else if(progressBar.nodeName === 'PROGRESS'){
@@ -379,116 +547,6 @@
 						}
 						
 					});
-
-
-					var undo_func = function(e){
-						this.classList.add('active');
-						var that = this;
-						e.stopPropagation();
-						if(window.Worker && workerInProgress){
-							return;
-						}else{
-							setTimeout(function(){
-								positions.tools.undo();
-								positions.render();
-								that.classList.remove('active');
-							}, 0);
-						}
-
-					};
-					var forward_func = function(e){
-						this.classList.add('active');
-						var that = this;
-						e.stopPropagation();
-
-						// check if game is already finished (if mate)
-						var king = document.querySelector('.king_' + positions.current_side);
-						king.click();
-						document.body.click();
-
-						if(window.Worker && !workerInProgress){
-
-							if(positions.win === "black" || positions.win === "white"){
-
-								that.classList.remove('active');
-								return;
-
-							}else{
-
-								positions.tools.ai_move();
-
-							}
-
-						}else if(workerInProgress){
-
-							return;
-
-						}else{
-							setTimeout(function(){
-
-								if(positions.win === "black" || positions.win === "white"){
-
-									that.classList.remove('active');
-									return;
-
-
-								}else{
-
-									positions.tools.ai_move();
-									that.classList.remove('active');
-
-								}
-
-							}, 0);
-						}
-					};
-
-					var workerCircle = function(){
-						positions.tools.ai_move();
-					};
-
-					var autoplay_func =	function(e){
-						e.stopPropagation();
-						this.classList.toggle('active');
-
-						var circle = function(){
-							positions.tools.ai_move();
-							setTimeout(circle, 0);
-						};
-
-						if(this.classList.contains('active')){
-							undo_arrow.removeEventListener('click', undo_func);
-							forward_arrow.removeEventListener('click', forward_func);
-
-							if(window.Worker){
-								
-								document.addEventListener('workerReady', workerCircle);
-
-								if(!workerInProgress){
-									workerCircle();
-								}
-
-							}else{
-
-								setTimeout(function(){
-									circle();
-								}, 0);
-							}
-
-						}else{
-							if(window.Worker){
-								
-								setTimeout(function(){
-									document.removeEventListener('workerReady', workerCircle);
-								}, 0);
-								
-							}
-							undo_arrow.addEventListener('click', undo_func);
-							forward_arrow.addEventListener('click', forward_func);
-
-						}
-
-					};
 
 					/// move/undo/AIvsAI control 
 					undo_arrow.addEventListener('click', undo_func);

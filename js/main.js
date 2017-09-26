@@ -20,9 +20,12 @@ var positions = {
 					updates_container.win = this.win;
 					//console.log(updates.current_move);
 					//console.log('UPDATES', updates[t], updates['win']);
-					positions.game_status = updates[t];
+					this.game_status = updates[t];
 					if(updates['win'] !== undefined){
-						positions.win = updates['win'];
+						if(updates['win'] !== ""){
+							this.call = 0;
+						}
+						this.win = updates['win'];
 					}
 					//show game status somewhere
 					//console.log(updates[t]);
@@ -32,7 +35,16 @@ var positions = {
 					if(typeof updates[t] !== 'string'){
 						updates_container.origin_figure = updates_container.origin_figure || {};
 						// stores origin figure to undo later
-						updates_container.origin_figure[t] = this.matrix[t.split('_')[0]][t.split('_')[1]];
+						updates_container.origin_figure[t] = function(){
+							var res = '';
+							for(var piece in this.data){
+								if(this.data[piece][0] == t.split('_')[0] && this.data[piece][1] == t.split('_')[1]){
+									res = piece;
+									break;
+								}
+							}
+							return res;
+						}.bind(this)();
 
 						this.matrix[updates[t][0]][updates[t][1]] = this.matrix[t.split('_')[0]][t.split('_')[1]];
 						
@@ -53,7 +65,6 @@ var positions = {
 								if(this.data[h][0] === t.split('_')[0] - 0 && this.data[h][1] === t.split('_')[1] - 0){
 									this.data[h] = updates[t];
 									transformed_figure_found = true;
-									break;
 								}
 							}
 						}
@@ -74,7 +85,7 @@ var positions = {
 			                    this.data[updates[t].split('_')[0] + '_' + color + '_' + ++num] = [t.split('_')[0] - 0, t.split('_')[1] - 0];
 
 			                    // store transform figure to delete it if undo
-			                    updates_container.transform = updates[t].split('_')[0] + '_' + color + '_' + ++num;
+			                    updates_container.transform = updates[t].split('_')[0] + '_' + color + '_' + num;
 			                    
 			                    //delete pawn from spot
 			                    for(var h in this.data){
@@ -151,17 +162,18 @@ var positions = {
 			// green moves
 			}else{
 
-				if( typeof pos_cells.possible_cells != 'undefined' ){
+				if( typeof pos_cells.possible_cells != 'undefined'  &&  pos_cells.possible_cells.length !== 0){
+					var green_cells = [];
 					for(var i = 0; i < this.board_cells.length; i++){
 						var j = Math.floor(i / 8);
 						var k = i % 8;
-
 						for(var t = 0; t < pos_cells.possible_cells.length; t++){
 							if( j == pos_cells.possible_cells[t][0] && k == pos_cells.possible_cells[t][1]){
 								if(this.board_cells[i].className.match(/.+ green/)){
 									this.board_cells[i].className = this.board_cells[i].className.replace(/ green/, "");
 								}
 								this.board_cells[i].className += " " + 'green';
+								green_cells.push(i);
 								this.move_status = 'selection';
 
 								/* function set_possible_moves set callbacks on each
@@ -188,25 +200,30 @@ var positions = {
 									1 				remove all moves from board (old and new)
 									2				remove callbacks from that moves */
 
-								document.addEventListener('click', function(){
-									var y = i;
-									var object = this;
-									return function(){
-										object.move_status = null;
-										object.board_cells[y].className = object.board_cells[y].className.replace(/ green/, "");
-										for(var i = 0; i < object.callbacks.length; i++){
-											object.board_cells[object.callbacks[i][1]].removeEventListener('click', object.callbacks[i][0], false);
-										} 
-									};
-								}.apply(this), false); 
-
 							}
 						}
 					}
+					document.addEventListener('click', function(){
+						var object = this;
+						return function removeDocumentGreenClick(){
+							object.move_status = null;
+							for(var n = 0; n < green_cells.length; n++){
+								object.board_cells[green_cells[n]].className = object.board_cells[green_cells[n]].className.replace(/ green/, "");
+							}
+
+							for(var i = 0; i < object.callbacks.length; i++){
+								object.board_cells[object.callbacks[i][1]].removeEventListener('click', object.callbacks[i][0], false);
+							}
+							object.callbacks = [];
+							document.removeEventListener('click', removeDocumentGreenClick); 
+						};
+					}.apply(this), false); 
 				}
 
 				// red moves (attacks)
-				if( typeof pos_cells.possible_attacks != 'undefined' ){ 
+				if( typeof pos_cells.possible_attacks != 'undefined' &&  pos_cells.possible_attacks.length !== 0){ 
+					debugger;
+					var red_cells = [];
 					for(var i = 0; i < this.board_cells.length; i++){
 						var j = Math.floor(i / 8);
 						var k = i % 8;
@@ -217,21 +234,27 @@ var positions = {
 									this.board_cells[i].className = this.board_cells[i].className.replace(/ red/, "");
 								}
 								this.board_cells[i].className += " " + 'red';
+								red_cells.push(i);
 								this.move_status = 'selection';
-								document.addEventListener('click', function(){
-									var y = i;
-									var object = this;
-									return function(){
-										object.move_status = null;
-										object.board_cells[y].className = object.board_cells[y].className.replace(/ red/, "");
-										for(var i = 0; i < object.callbacks.length; i++){
-											object.board_cells[object.callbacks[i][1]].removeEventListener('click', object.callbacks[i][0], false);
-										}
-									};
-								}.apply(this), false); 
 							}
 						}
 					}
+					document.addEventListener('click', function(){
+						var object = this;
+						return function removeDocumentRedClick(){
+							debugger;
+							object.move_status = null;
+							for(var n = 0; n < red_cells.length; n++){
+								object.board_cells[red_cells[n]].className = object.board_cells[red_cells[n]].className.replace(/ red/, "");
+							}
+							
+							for(var i = 0; i < object.callbacks.length; i++){
+								object.board_cells[object.callbacks[i][1]].removeEventListener('click', object.callbacks[i][0], false);
+							}
+							object.callbacks = [];
+							document.removeEventListener('click', removeDocumentRedClick); 
+						};
+					}.apply(this), false); 
 				}
 			}
 		},
@@ -518,7 +541,7 @@ var positions = {
 							}else{
 								// if single player 
 								object.set_updates(updates);
-								if(object.AI === false){
+								if(object.AI === false && updates.win === ""){
 									// ai operates (build a tree) with copy of same object data as user,
 									// so we should block all DOM operations when ai searching move
 									object.render();
@@ -646,12 +669,17 @@ var positions = {
 											///execute move only to send information about stalemate
 											this.execute_move(undefined, undefined, undefined, undefined, undefined, this)();
 										}
-										// set executions of moves
-										for(var i = 0; i < arr.length; i++){
-											this.board_cells[arr[i][0]*8 + arr[i][1]].addEventListener('click', 
-												this.execute_move(j, k, arr[i][0], arr[i][1], arr[i][2], this), false);
+										if(this.win === ""){
+											// set executions of moves
+											for(var i = 0; i < arr.length; i++){
+												this.board_cells[arr[i][0]*8 + arr[i][1]].addEventListener('click', 
+													this.execute_move(j, k, arr[i][0], arr[i][1], arr[i][2], this), false);
+											}
+
+											this.render(res, 'selection');
+
 										}
-										return this.render(res, 'selection');
+	
 
 									}else{
 
@@ -845,7 +873,7 @@ var positions = {
 									cells.push([j, k]);
 									if((positions.matrix[j][k] + '').match(reg1) || (positions.matrix[j][k] + '').match(reg2)){
 										if(positions.matrix[j][k] !== 'king_' + side){
-											buf.push(positions.matrix[j][k]);
+											buf.push(positions.tools.getDataFromMatrix(j, k));
 										}
 									}
 
@@ -897,6 +925,14 @@ var positions = {
 
 			undo:function(){
 				var last_update = positions.moves_stack.length !== 0 ? positions.moves_stack.pop() : null;
+				if(last_update !== null && last_update.game_status === 'end'){
+					setTimeout((function(){
+						return function(){
+							positions.tools.undo();
+							positions.render();
+						}
+					}()), 0);
+				}
 
 				// if no moves was done yet
 				if(last_update === null){
@@ -915,28 +951,16 @@ var positions = {
 					if(t !== 'deleted' && t !== 'current_move' && t !== 'current_side' && t !== 'name' && t !== 'password' && t !== 'is_it_a_first_move' && t !== 'game_status' && t !== 'win' && t !== 'check'){
 						if(typeof last_update.updates[t] !== 'string'){
 							var origin = last_update.origin_figure[t],
-								m = last_update.updates[t],
-								dataOrigin = function findTransformedPieces(){
-
-								if(positions.data[origin][0] !== m[0] || positions.data[origin][1] !== m[1]){
-									for(var h in positions.data){
-										if(positions.data[h][0] === m[0] &&  positions.data[h][1] === m[1] && h != last_update.transform){
-											return h;
-										}
-									}
-								}else{
-									return false;
-								}
-
-							}();
+								m = last_update.updates[t];
 
 							// stores origin figure to undo later
-							positions.matrix[t.split('_')[0]][t.split('_')[1]] = origin;
-							if(dataOrigin){
-								positions.data[dataOrigin] = [t.split('_')[0] - 0, t.split('_')[1] - 0];
-							}else{
-								positions.data[origin] = [t.split('_')[0] - 0, t.split('_')[1] - 0];
-							}
+							positions.matrix[t.split('_')[0]][t.split('_')[1]] = ( origin.split('_').length >= 3 ) ? origin.split('_')[0] + '_' + origin.split('_')[1] : origin;
+							positions.data[origin] = [t.split('_')[0] - 0, t.split('_')[1] - 0];
+
+							// if(dataOrigin){
+							// 	positions.data[dataOrigin] = [t.split('_')[0] - 0, t.split('_')[1] - 0];
+							// }
+
 
 							if(last_update.cut !== undefined){
 								if(last_update.cut.match(/^.+_.+_\d+/)){
@@ -967,6 +991,14 @@ var positions = {
 				}
 				if(typeof last_update.check !== 'undefined'){
 					positions.check = last_update.check;
+				}
+			},
+
+			getDataFromMatrix: function(j, k){
+				for(var piece in positions.data){
+					if(positions.data[piece][0] === j && positions.data[piece][1] === k){
+						return piece;
+					}
 				}
 			},
 
@@ -1066,7 +1098,7 @@ var positions = {
 
 		    	var call = call || positions.call;
 
-		    	if(call <= 1 || !positions.ai_nodes_checked_elem){
+		    	if(call <= 2 || !positions.ai_nodes_checked_elem){
 		    		return 0;
 		    	}
 		    	if(typeof window !== 'undefined' && typeof window.requestAnimationFrame !== 'undefined'){
@@ -1452,8 +1484,74 @@ var positions = {
 	    	king_white: true,
 	    	king_black: true
 	    },
-	    modal: {
-	    	//modal
+	    modal: function(message){
+
+	    	var modalBlock = document.createElement('div'),
+	    		modalBlockContainer = document.createElement('div'),
+	    		p = document.createElement('p'),
+	    		okButton = document.createElement('input'),
+	    		form = document.createElement('form');
+
+	    	modalBlock.classList.add('modal-block');
+	    	modalBlockContainer.classList.add('modal-block-container');
+
+	    	okButton.setAttribute('type', 'submit');
+	    	okButton.value = 'Ok';
+	    	okButton.setAttribute('name', 'okButton');
+
+	    	p.textContent = message;
+
+	    	form.setAttribute('name','modal-block__form');
+	    	form.setAttribute('method','POST');
+	    	form.id = 'message_block_form';
+
+	    	form.appendChild(okButton);
+
+	    	modalBlock.appendChild(p);
+	    	modalBlock.appendChild(form);
+
+	    	modalBlockContainer.appendChild(modalBlock);
+
+	    	document.body.insertBefore(modalBlockContainer, document.body.firstChild);
+
+	    	okButton.focus();
+
+
+	    	
+	    	document.addEventListener('keydown', function escape(e){
+
+    			if(e.keyCode == '27'){
+					document.body.removeChild(modalBlockContainer);
+    			}
+				document.removeEventListener('keydown', escape);
+
+    		});
+
+	    	form.elements[0].addEventListener('keydown', function(e){
+    			if(e.keyCode == '9'){
+				  	e = e || window.e;
+					if (e.preventDefault) { 
+				    	e.preventDefault(); 
+				  	}else{ 
+				    	e.returnValue = false;
+					}
+					return false;
+    			}
+	    	});
+
+	    	form.addEventListener('submit', function(e){
+
+			  	e = e || window.e;
+				if (e.preventDefault) { 
+			    	e.preventDefault(); 
+			  	}else{ 
+			    	e.returnValue = false;
+				}
+
+				document.body.removeChild(modalBlockContainer);
+
+    		});
+
 	    },
 	    messageBoxModule: null,
 	    password: '',

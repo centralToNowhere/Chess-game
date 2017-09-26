@@ -35,8 +35,8 @@ var ChessBot = (function(){
 
 	return function(object){
 
-		var depth = 4,
-			current_depth = 1,
+		var depth = 3,
+			current_depth = 0,
 			side = object.current_side === 'white' ? 'black' : 'white';
 
 		function throttle(fn){
@@ -226,20 +226,7 @@ var ChessBot = (function(){
 
 						var type = filter(c),
 							pieceFromMatrix = object.matrix[c[0][0]][c[0][1]],
-							pieceFromData = '',
-							transformed = function findTransformedPieces(){
-
-								if(object.data[pieceFromMatrix][0] !== c[0][0] && object.data[pieceFromMatrix][1] !== c[0][1]){
-									for(var h in object.data){
-										if(object.data[h][0] === c[0][0] &&  object.data[h][1] === c[0][1]){
-											return h;
-										}
-									}
-								}else{
-									return false;
-								}
-
-							}(),
+							pieceFromData = object.tools.getDataFromMatrix(c[0][0], c[0][1]),
 							length = 0;
 
 
@@ -247,11 +234,8 @@ var ChessBot = (function(){
 						//make virtual move
 						object.matrix[c[0][0]][c[0][1]] = null;
 						object.matrix[c[1][0]][c[1][1]] = pieceFromMatrix;
-						if(transformed){
-							object.data[transformed] = [c[1][0], c[1][1]];
-						}else{
-							object.data[pieceFromMatrix] = [c[1][0], c[1][1]];
-						}
+
+						object.data[pieceFromData] = [c[1][0], c[1][1]];
 
 						// get number of attack moves
 						length = object.get_moves(object.moves[type](), c[1][0], c[1][1], object).possible_attacks.length;
@@ -259,11 +243,8 @@ var ChessBot = (function(){
 						// undo virtual move
 						object.matrix[c[0][0]][c[0][1]] = pieceFromMatrix;
 						object.matrix[c[1][0]][c[1][1]] = null;
-						if(transformed){
-							object.data[transformed] = [c[0][0], c[0][1]];
-						}else{
-							object.data[pieceFromMatrix] = [c[0][0], c[0][1]];
-						}
+
+						object.data[pieceFromData] = [c[0][0], c[0][1]];
 
 						return length;
 
@@ -491,7 +472,7 @@ var ChessBot = (function(){
 				object.AI = false;
 				this.move(tree[tree[-2]][4][0][0], tree[tree[-2]][4][0][1], tree[tree[-2]][4][1][0], tree[tree[-2]][4][1][1], tree[tree[-2]][4][1][2], object);
 				object.current_side = object.ai_side === 'white' ? 'black' : 'white';
-				object.ai_side = '';
+				object.ai_side = ''; // if ai_move == '', it is a human player move
 				object.call = 0;
 			}
 
@@ -822,7 +803,11 @@ var ChessBot = (function(){
 			}.apply(this);
 			real.call = object.call;
 
-			object = real; // restore positions object
+			// restore positions object
+			object = real;
+
+			// return back context to real positions
+			object.setSelfContext();
 
 			// real move
 			this.sendResult(tree);
@@ -1084,7 +1069,11 @@ var ChessBot = (function(){
 
 			real.call = object.call;
 
-			object = real; // restore positions object
+			// restore positions object
+			object = real;
+
+			// return back context to real positions
+			object.setSelfContext();
 
 			// real move
 			this.sendResult(tree);
