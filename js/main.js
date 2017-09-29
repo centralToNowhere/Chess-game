@@ -1522,8 +1522,8 @@ var positions = {
 
     			if(e.keyCode == '27'){
 					document.body.removeChild(modalBlockContainer);
+					document.removeEventListener('keydown', escape);
     			}
-				document.removeEventListener('keydown', escape);
 
     		});
 

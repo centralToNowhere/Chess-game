@@ -183,29 +183,35 @@
 					var board = document.querySelector('.board-container'),
 						icon_menu = document.querySelector('.container__icon-menu'),
 						ai_settings = document.querySelector('.ai-settings'),
+						icon_menu_wrapper = document.querySelector('.container__icon-menu_wrapper'),
 						ai_settings_content = document.createElement('ul'),
 						nodes_count_label = document.createElement('span'),
 						nodes_count_div = document.createElement('div'),
 						container__nodes_count = document.createElement('div'),
 						pruning_label = document.createElement('span'),
 						pruning_div = document.createElement('div'),
-						container__pruning= document.createElement('div'),
+						container__pruning = document.createElement('div'),
+						container__mobile_metrics = document.createElement('div'),
 						progressBar = document.createElement('progress'),
 						undo_arrow = document.createElement('img'),
 						forward_arrow = document.createElement('img'),
 						autoplay = document.createElement('img'),
+						metrics = document.createElement('img'),
 						intervalId = 0;
 
 					container__nodes_count.classList.add('container__ai-info-output');
 					container__pruning.classList.add('container__ai-info-output');
+					container__mobile_metrics.classList.add('container__mobile_metrics');
 					progressBar.classList.add('container__progressBar');
 
 					undo_arrow.src = './images/arrow.png';
 					forward_arrow.src = './images/arrow.png';
 					autoplay.src = './images/autoplay.png';
+					metrics.src = './images/icon-metrics.png';
 					undo_arrow.classList.add('container__undo-arrow');
 					forward_arrow.classList.add('container__forward-arrow');
 					autoplay.classList.add('container__auto');
+					metrics.classList.add('container__metrics');
 					ai_settings.appendChild(ai_settings_content); 
 					ai_settings_content.outerHTML = '<ul class="ai-settings__list">Search algorithm <li class="ai-settings__item">Minimax <input type="radio" name="check_algo" value="minimax" id="algo_minimax"> <label for="algo_minimax"></label> </li><li class="ai-settings__item">Alpha-Beta <input type="radio" name="check_algo" value="alphaBeta" id="algo_alphaBeta" checked> <label for="algo_alphaBeta"></label> <ul class="ai-settings__list"> <li class="ai-settings__item">Ordering <input type="checkbox" id="algo_alphaBeta_ordering" checked> <label for="algo_alphaBeta_ordering"></label> </li></ul> </li><li class="ai-settings__item">NegaScout <input type="radio" name="check_algo" value="negaScout" id="algo_negaScout"> <label for="algo_negaScout"></label> </li><li class="ai-settings__item"> Depth <div class="ai-settings__item-select-div"> <select name="depth"> <option value="2">2</option> <option value="3" selected>3</option> <option value="4">4</option> <option value="5">5</option> </select> <div class="ai-settings__item-select">3</div><ul class="ai-settings__item-select-list"> <li class="ai-settings__item-select-item" data-value="2">2</li><li class="ai-settings__item-select-item" data-value="3">3</li><li class="ai-settings__item-select-item" data-value="4">4</li><li class="ai-settings__item-select-item" data-value="5">5</li></ul> </div></li><li class="ai-settings__item">Evaluation <ul class="ai-settings__list"> <li class="ai-settings__item"> Material <input type="checkbox" id="check_eval_material" checked> <label for="check_eval_material"></label> </li><li class="ai-settings__item"> Position <input type="checkbox" id="check_eval_position" checked> <label for="check_eval_position"></label> </li></ul> </li></ul>';
 
@@ -218,10 +224,18 @@
 
 					container__pruning.appendChild(pruning_label);
 					container__pruning.appendChild(pruning_div);
-					icon_menu.appendChild(undo_arrow);
-					icon_menu.appendChild(autoplay);
-					icon_menu.appendChild(forward_arrow);
-					icon_menu.appendChild(container__nodes_count);
+
+					//wrapper for scrollbar (overflow-x: auto/scroll/hidden; overflow-y:visible problem)
+					icon_menu.appendChild(icon_menu_wrapper);
+
+					icon_menu_wrapper.appendChild(undo_arrow);
+					icon_menu_wrapper.appendChild(autoplay);
+					icon_menu_wrapper.appendChild(forward_arrow);
+					icon_menu_wrapper.appendChild(metrics);
+					icon_menu_wrapper.appendChild(container__nodes_count);
+
+					icon_menu_wrapper.parentNode.insertBefore(container__mobile_metrics, icon_menu_wrapper.nextElementSibling);
+
 
 					var undo_func = function(e){
 							this.classList.add('active');
@@ -361,11 +375,29 @@
 
 							}
 
-						};
+						},
+						metrics_func = function(e){
+							e.stopPropagation();
+							this.classList.toggle('active');
+
+							function showMobileMetrics(elem_metrics){
+								if(elem_metrics.parentNode === icon_menu_wrapper){
+									icon_menu_wrapper.removeChild(elem_metrics);
+									container__mobile_metrics.appendChild(elem_metrics);
+								}else{
+									container__mobile_metrics.removeChild(elem_metrics);
+									icon_menu_wrapper.appendChild(elem_metrics);
+								}
+							}
+
+							showMobileMetrics(container__nodes_count);
+							showMobileMetrics(container__pruning);
+
+						}
 
 					// no gui updates - no pruning
 					if(window.Worker){
-						icon_menu.appendChild(container__pruning);
+						icon_menu_wrapper.appendChild(container__pruning);
 					}
 
 					//start metrix
@@ -392,11 +424,11 @@
 							// bot = {},
 							algorithm = document.querySelector('input[name="check_algo"]:checked').value;
 
-						//reset metricks
+						//reset metrics
 						pruning_div.textContent = '0.00%';
 						nodes_count_div.textContent = '0';
 						progressBar.value = 0;
-						icon_menu.appendChild(progressBar);
+						icon_menu_wrapper.appendChild(progressBar);
 
 						bot.set_side(positions.current_side);
 						positions.ai_side = positions.current_side;
@@ -500,7 +532,7 @@
 										}else if(progressBar.nodeName === 'PROGRESS'){
 											progressBar.value = "0";
 										}
-										icon_menu.removeChild(progressBar);
+										icon_menu_wrapper.removeChild(progressBar);
 										positions.ai_output_pruning_sum = 0;
 										positions.ai_output_researched_sum = 0;
 										console.log('finished');
@@ -552,36 +584,22 @@
 					undo_arrow.addEventListener('click', undo_func);
 					forward_arrow.addEventListener('click', forward_func);
 					autoplay.addEventListener('click', autoplay_func);
+					metrics.addEventListener('click', metrics_func);
 
 					// set arrow keys
 					document.addEventListener('keydown', function(e){
 		    			if((e.keyCode == '39' || e.keyCode == '68') && !e.ctrlKey && !e.shiftKey && !e.altKey){
-	    				  	e = e || window.e;
-	    					if (e.preventDefault) { 
-	    				    	e.preventDefault(); 
-	    				  	}else{ 
-	    				    	e.returnValue = false;
-	    					}
+		    				e.stopPropagation();
 							forward_func.call(forward_arrow, e);
 							return;
 		    			}
 		    			if((e.keyCode == '37' || e.keyCode == '65') && !e.ctrlKey && !e.shiftKey && !e.altKey){
-	    				  	e = e || window.e;
-	    					if (e.preventDefault) { 
-	    				    	e.preventDefault(); 
-	    				  	}else{ 
-	    				    	e.returnValue = false;
-	    					}
+		    				e.stopPropagation();
 	    					undo_func.call(undo_arrow, e);
 	    					return;
 		    			}
 		    			if(e.keyCode == '82' && !e.ctrlKey && !e.shiftKey && !e.altKey){
-	    				  	e = e || window.e;
-	    					if (e.preventDefault) { 
-	    				    	e.preventDefault(); 
-	    				  	}else{ 
-	    				    	e.returnValue = false;
-	    					}
+		    				e.stopPropagation();
 	    					autoplay_func.call(autoplay, e);
 	    					return;
 		    			}
@@ -639,6 +657,7 @@
 
 					});
 
+
 					////??????? scale board
 					scale();
 					window.addEventListener('optimizedResize', scale, false);
@@ -666,10 +685,22 @@
 			this.parentNode.parentNode.parentNode.classList.remove('row_compressed');
 
 		});
+		document.querySelector('.ai-settings__x-mark-menu').firstElementChild.addEventListener('keydown', function(e){
+			if(e.keyCode == '13'){
+				this.parentNode.parentNode.parentNode.classList.remove('row_compressed');
+			}
+
+		});
 
 		document.querySelector('.container__menu-button').addEventListener('click', function(e){
 			e.stopPropagation();
-			this.parentNode.parentNode.classList.add('row_compressed');
+			this.parentNode.parentNode.parentNode.classList.add('row_compressed');
+
+		});
+		document.querySelector('.container__menu-button').addEventListener('keydown', function(e){
+			if(e.keyCode == '13'){
+				this.parentNode.parentNode.parentNode.classList.add('row_compressed');
+			}
 
 		});	
 
@@ -760,22 +791,20 @@ var chat = (function(){
 // scales board cells if window size changes
 
 var scale = (function(){
-	var throttle = function(type, name, obj) {
-        obj = obj || window;
-        var running = false;
-        var func = function() {
-            if (running) { return; }
-            running = true;
-             requestAnimationFrame(function() {
-                obj.dispatchEvent(new CustomEvent(name));
-            });
-        };
-        obj.addEventListener(type, func);
-    };
-    throttle("resize", "optimizedResize");
+
+	//set height ai_settings block  === ClientWidth if no set yet 
+
+	function setSidebarAiSettingsHeight(){
+		setSidebarAiSettingsHeight.ai_settings = setSidebarAiSettingsHeight.ai_settings || document.querySelector('.ai-settings');
+		var currentUsedHeight = getComputedStyle(setSidebarAiSettingsHeight.ai_settings).height;
+		var clientH = document.documentElement.clientHeight;
+		if(clientH > parseInt(currentUsedHeight)){
+			setSidebarAiSettingsHeight.ai_settings.style.height = clientH + "px";
+		}
+	};
 
 	var scale = function(){
-
+		setSidebarAiSettingsHeight();
 		if(document.documentElement.clientWidth <= 510){
 			var cells = document.querySelectorAll('.board__cell');
 			var width = cells[0].offsetWidth;
@@ -783,20 +812,6 @@ var scale = (function(){
 				cells[h].style.height = width + "px";
 			}
 		}
-		// if(document.documentElement.clientHeight < document.documentElement.scrollHeight){
-		// 	if(document.documentElement.clientWidth >= 977){
-		// 		document.querySelector('.board-container').style.paddingRight = 398.66 + "px";
-		// 	}else{
-		// 		document.querySelector('.board-container').style.paddingRight = 15 + "px";
-		// 	}
-		// }else{
-		// 	console.log('sdfsdfds');
-		// 	if(document.documentElement.clientWidth >= 992){
-		// 		document.querySelector('.board-container').style.paddingRight = 398.66 + "px";
-		// 	}else{
-		// 		document.querySelector('.board-container').style.paddingRight = 15 + "px";
-		// 	}
-		// }
 	}
 	return scale;
 }());

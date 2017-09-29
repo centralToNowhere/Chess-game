@@ -216,7 +216,7 @@ input[data-check]:checked + label{
 	position: fixed;
 	top: 0;
 	left: 0;
-	z-index: 1;
+	z-index: 2;
 	width: 100%;
 	height: 100%;
 	text-align: center;
@@ -230,26 +230,26 @@ input[data-check]:checked + label{
 .modal-block{
 	display: inline-block;
 	background: #fff;
-	width: 25vw;
+	width: 60%;
 	vertical-align: middle;
 	text-align: center;
 	box-shadow: 0 -8px 16px 0 rgba(0,0,0,0.2), 0 8px 16px 0 rgba(0,0,0,0.2),0 6px 35px 0 rgba(0,0,0,0.19);
 }
 .modal-block > p {
-	width: 20vw;
-	margin: 1vw auto;
-	padding-top: 1.5vw;
-	padding-bottom: 1.5vw;
-	font-weight: 600;
-	font-size: 1.2vw;
+    width: 90%;
+    padding-top: 4.5vw;
+    padding-bottom: 4.5vw;
+    font-weight: 600;
+    font-size: 4.2vw;
+    display: inline-block;
 }
 .modal-block input[type="submit"]{
-	display: block;
-	width: 8vw;
-	margin: 1vw auto ;
-	line-height: 1.3;
-	font-size: 1.5vw;
-	text-align: center;
+    display: block;
+    width: 40%;
+    margin: 0 auto 4.5vw auto;
+    line-height: 1.7;
+    font-size: 3.5vw;
+    text-align: center;
 	-webkit-transition: box-shadow 0.5s ease-out;
 	-moz-transition: box-shadow 0.5s ease-out;
 	-o-transition: box-shadow 0.5s ease-out;
@@ -394,12 +394,31 @@ chessBot
 .ai-settings_active{
 	margin-left: 0;
 }
-.container__icon-menu{
-	position: relative;
+.container__icon-menu {
 	background-color: #CED0B6;
-	color:white;
+	white-space: nowrap;
+	color: white;
+	position: relative;
+	padding-left: 60px;
 	font-size: 1.5em;
 	width: 100%;
+	overflow-y: visible;
+	transition: width 1s ease-out;
+	-webkit-transition: width 1s ease-out;
+	-moz-transition: width 1s ease-out;
+	-o-transition: width 1s ease-out;
+}
+.container__icon-menu_wrapper {
+	overflow-x: auto;
+	text-align: center;
+	padding-right: 60px;
+	min-height: 62px;
+}
+.container__icon-menu_wrapper img:last-of-type {
+	margin-right: 12px !important;
+}
+.container__icon-menu_wrapper img:nth-of-type(2){
+	margin-left: 12px !important;
 }
 .container__ai-info-output{
 	display: inline-block;
@@ -415,26 +434,30 @@ chessBot
 	background: #fff;
 	height: 5px;
 	position: absolute;
-	bottom: -5px;
 	border: none;
+	right: 0px;
 }
-.container__icon-menu img{
+.container__icon-menu_wrapper img{
 	display: inline-block;
 	cursor: pointer;
 	padding: 20px; 
 	max-width: 60px;
 }
-.container__icon-menu img:not(:nth-of-type(1)){
+.container__icon-menu_wrapper img:not(:nth-of-type(1)){
 	padding: 0 12px;
 	margin-right:9px;
-	margin: 8px 0;
+	margin: 13px 0;
 	margin-right:25px;
 }
-.container__icon-menu span{
+.container__icon-menu_wrapper span{
 	vertical-align: middle;
 }
 .container__menu-button{
-	padding-top: 22px;
+	padding:20px 16px !important;
+	width: 60px;
+	margin-right: 20px;
+	position: absolute;
+	left: 0;
 }
 
 .container__undo-arrow{
@@ -445,21 +468,41 @@ chessBot
 	-ms-transform: rotate(180deg); /* IE 9 */
 	-webkit-transform: rotate(180deg); /* Chrome, Safari, Opera */
 	transform: rotate(180deg);
+
+}
+
+.container__mobile_metrics {
+	position: absolute;
+	text-align: left;
+	top: 65px;
+	right: 0;
+	z-index: 1;
+	opacity: 0.9;
+	left: 0;
 }
 .container__auto{
 	padding: 6px 12px !important;
 }
+
+.container__metrics{
+	padding-top: 4.5px !important;
+	padding-bottom: 4.5px !important;
+	display: none !important;
+}
+
 .container__undo-arrow:hover,
 .container__forward-arrow:hover,
-.container__auto:hover{
+.container__auto:hover,
+.container__metrics:hover{
 	box-shadow: 0 -8px 16px 0 rgba(0,0,0,0.2), 0 8px 16px 0 rgba(0,0,0,0.2),0 6px 35px 0 rgba(0,0,0,0.19);
 }
 .container__undo-arrow.active,
 .container__forward-arrow.active,
-.container__auto.active {
+.container__auto.active,
+.container__metrics.active {
 	box-shadow: inset 0 2px 16px 0 rgba(0,0,0,0.2);
-	border: 0.1vw solid rgba(0,0,0,0.2);
 }
+
 .ai-settings__item{
 	position: relative;
 	width: 100%;
@@ -590,30 +633,35 @@ chessBot
 	font-size: 1.5em;
 	position: relative;
 	left:0;
-	padding: 3px;
-	height: 54px;
+	height: 62px;
 	background-color: #808080;
 }
 .ai-settings__x-mark-menu > p{
 	display: inline-block;
 	margin: 0;
-	padding-top: 10px;
+	padding-top: 18px;
 }
 .ai-settings__x-mark-menu > img{
 	display: block;
 	float: left;
 	cursor: pointer;
+	width: 48px;
+	padding-top: 7px;
+	padding-bottom: 7px;
 }
 .row{
 	overflow-x: hidden;
-	transition: padding-left 0.5s ease-out;
-	-webkit-transition: padding-left 0.5s ease-out;
-	-moz-transition: padding-left 0.5s ease-out;
-	-o-transition: padding-left 0.5s ease-out;
+	transition: padding-left 1s ease-out;
+	-webkit-transition: padding-left 1s ease-out;
+	-moz-transition: padding-left 1s ease-out;
+	-o-transition: padding-left 1s ease-out;
+
 }
 .row_compressed{
 	padding-left: 320px;
+
 }
+
 
 
 
@@ -636,16 +684,23 @@ media
 		width:320px;
 	}
 }
-@media (min-width: 1200px) {
-
+@media (max-width: 400px){
+	.board{
+/*		width:100%;
+		height: auto;
+		box-sizing: border-box;
+		margin-left: -50%;*/
+		margin-top: -50%;
+	}
 }
+
 @media (max-width: 510px){
 	.board{
 		width:100%;
 		height: auto;
 		box-sizing: border-box;
 		margin-left: -50%;
-		margin-top: -50%;
+		/*margin-top: -50%;*/
 	}
 	.board-container{
 		min-width: initial !important;
@@ -663,6 +718,13 @@ media
 		left:50%;
 		margin-left: -40%;
 		top:-54px;
+	}
+	.modal-block {
+		width: 80%;
+	}
+	.modal-block > p {
+		line-height: 2;
+		font-size: 1.5em;
 	}
 	.textfield {
 		display: block;
@@ -697,21 +759,44 @@ media
 	}
 }
 
-	@media (max-height: 569px){
-		.board{
-			margin-top:0;
-			top:0;
-		}
-		.board-container{
-			height: 490px;
-		}
-		.container__icon-menu{
-
-		}
-		.ai-settings{
-			position: absolute;
-			height: 544px;
-		}
-
+@media (max-height: 569px){
+	/*.board{
+		margin-top:0;
+		top:0;
+	}*/
+	.board-container{
+		height: 490px;
+	}
+	.container__icon-menu{
+		margin-bottom: 5px;
+	}
+	.ai-settings{
+		position: absolute;
+		height: 544px;
 	}
 
+}
+
+@media (max-width: 768px) {
+	.container__icon-menu {
+		text-align: center;
+	}
+	.container__icon-menu * {
+		margin-left: 0 !important;
+		margin-right: 0 !important;
+	}
+	.container__ai-info-output {
+		display: none;
+	}
+	.container__mobile_metrics .container__ai-info-output {
+		display: inline-block;
+		background: #fff;
+		color: #000;
+		float: left;
+		width: 100%;
+		margin-left: 30px;
+	}
+	.container__metrics {
+		display: inline-block !important;
+	}
+}
