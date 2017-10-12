@@ -39,12 +39,19 @@ var ChessBot = (function(){
 			current_depth = 0,
 			side = object.current_side === 'white' ? 'black' : 'white';
 
-		function throttle(fn){
+		this.throttle = function(fn){
 			var calls = 0,
 				tmp = 0,
 				fractionSum = 0,
 				researchedFractionSum = 0,
-				throttleFn = function(fn, fraction, researchedFraction, isLast){
+				frSumBuffer = 0,
+				rsSumBuffer = 0,
+				nodesMulti = 1,
+				minimaxNodes = 0,
+				cutOffTrue = 0,
+				searchedTrue = 0,
+				lostNodes = {};
+				throttleFn = function(fn, fraction, researchedFraction, isLast, bfactorObject){
 					if(fraction){
 						fractionSum += fraction;
 					}
@@ -53,35 +60,102 @@ var ChessBot = (function(){
 					}
 					// last tick - show all amount of remainng nodes 
 					if(isLast === true){
-						fn.call(self, fractionSum, researchedFractionSum);
+
+						// only on pruning
+						// get approximately all nodes in the tree including all non-leaf nodes. Returning value is about minimax value nodes checked/moves made. Then calc the percentage of searched nodes(all the moves that we made). Cut-off indicator shows only percentage of leaf nodes(not all tree). So, we need to set final value at last call. 
+						if(typeof bfactorObject === 'object'){
+
+							// (╯°□°）╯︵ ┻━┻ 
+							
+							for(var d in bfactorObject.last){
+								for(var i = bfactorObject.last[d][1]; i < bfactorObject.last[d][0]; i++){
+									cutOffTrue += 1;
+								}
+							}
+
+							for(var d in bfactorObject){
+								this.getLostNodesAtDepth(+d,bfactorObject[d], bfactorObject[d-1]);
+							}
+
+							for(var d in this.getLostNodesAtDepth.res){
+								lostNodes[d] = this.getLostNodesAtDepth.res[d].lostNodes.map(function(a){
+									return typeof this.getLostNodesAtDepth.res[d].averageValuesList[a] !== 'undefined' ?  this.getLostNodesAtDepth.res[d].averageValuesList[a] : this.getLostNodesAtDepth.res[d].average;
+								}.bind(this))
+							}
+
+							for(var d in lostNodes){
+								lostNodes[d].forEach(function(c){
+									var d_current = d,
+										buf = [],
+										bufLen = 0,
+										t = 0,
+										b = 0;
+									cutOffTrue += 1;
+									cutOffTrue += c;
+									buf.push(c);
+
+									while(typeof lostNodes[d_current] !== 'undefined'){
+
+										d_current++;
+										bufLen = buf.length;
+
+										if(typeof this.getLostNodesAtDepth.res[d_current] !== 'undefined'){
+											for(var l = 0; l < bufLen; l++){
+												b = buf.shift();
+												for(var f = 0; f < b; f++){
+													t = (typeof this.getLostNodesAtDepth.res[d_current].averageValuesList[f] !== 'undefined') ? this.getLostNodesAtDepth.res[d_current].averageValuesList[f] : this.getLostNodesAtDepth.res[d_current].average;
+													cutOffTrue += t;
+													buf.push(t);
+												}
+
+											}
+										}
+									}
+									delete buf;
+								}.bind(this));
+							}
+
+							//for cutoff accuracy test
+							self.postMessage(['storage', 'cuttOffAccuracyTest',
+								object.call, (cutOffTrue + object.call), (1 - object.call / (cutOffTrue + object.call)).toFixed(4) * 100, (frSumBuffer + fractionSum).toFixed(4) * 100]);
+							console.log('Worker '+ object.call + '    ' + (cutOffTrue + object.call) + '   ' + (1 - object.call / (cutOffTrue + object.call)).toFixed(4) * 100 + '     '  + (frSumBuffer + fractionSum).toFixed(4) * 100);
+
+							delete bfactorObject;
+
+						}
+						fn.call(self, 1 - object.call / (cutOffTrue + object.call), researchedFractionSum, 'force');
 						fractionSum = 0;
 						researchedFractionSum = 0;
+						frSumBuffer = 0;
+						rsSumBuffer = 0;
 						return;
 					}
 
 					if(calls >= tmp){
 						tmp = 1.7070* Math.pow(calls, 0.9673);
 						fn.call(self, fractionSum, researchedFractionSum);
+						frSumBuffer += fractionSum;
 						fractionSum = 0;
+						rsSumBuffer += researchedFractionSum;
 						researchedFractionSum = 0;
 					}
 					calls++;
 
-				}.bind(undefined, fn);
+				}.bind(this, fn);
 
 			return throttleFn;
 			
 		};
 
 		if(self.isWorker){
-			var postNodes = throttle(function(){
+			var postNodes = this.throttle(function(){
 					self.postMessage(['guiUpdate', 'nodes', object.call]);
 				}),
-				progressBar = throttle(function(fraction, fractionResearched){
+				progressBar = this.throttle(function(fraction, fractionResearched){
 					self.postMessage(['guiUpdate', 'progressBar', fraction, fractionResearched]);
 				}),
-				postPruning = throttle(function(fraction, fractionResearched){
-					self.postMessage(['guiUpdate', 'pruning', fraction, fractionResearched]);
+				postPruning = this.throttle(function(fraction, fractionResearched, force){
+					self.postMessage(['guiUpdate', 'pruning', fraction, fractionResearched, force]);
 				});
 		}
 
@@ -148,6 +222,132 @@ var ChessBot = (function(){
 
 		};
 
+		this.getLostNodesAtDepth = function(depth, current, prev) {
+			
+			var len = current.length,
+				tmpLen = 0,
+				average = current.reduce(function(a, b){
+					if(typeof b === 'number'){
+						tmpLen++;
+						return a + b;
+					}else{
+						return a;
+					}
+				}, 0) / tmpLen,
+				median = function(current){
+					var c = current.filter(function(a){
+						return typeof a === 'number';
+					});
+					c.sort(function(a, b){
+						return a - b;
+					});
+					return c.length % 2 !== 0 ? c[(c.length - 1) / 2] : (c[c.length / 2] + c[(c.length / 2) - 1]) / 2 ;
+				}(current),
+				sum = 0,
+				obj = {},
+				arr = [],
+				arr2 = [],
+				arr3 = [],
+				maxL = 0,
+				averageL = 0,
+				isDifferentFromMedian = 0,
+				hardCutOff = 0;
+
+			this.getLostNodesAtDepth.res = this.getLostNodesAtDepth.res || {};
+
+			for(var i = 0, j = 0;i<len;i++, j++ ){
+				if(i+1 === len && typeof arr3[0] === 'undefined'){
+					arr3.push(i+1);
+				}
+				if(typeof current[i] !== 'number'){
+					arr3.push(j);
+					j = -1;
+					continue;
+				}
+				if(Math.abs(current[i] - median) > 2 * median){
+					isDifferentFromMedian++;
+				}
+				obj[j] = obj[j] || [];
+				obj[j].push(current[i]);
+
+			}
+
+			for(var l in obj){
+				averageL += obj[l].length;
+				maxL = obj[l].length > maxL ? obj[l].length : maxL;
+				if(obj[l].length === 1){
+					hardCutOff++;
+				}
+			}
+			averageL = averageL / Object.keys(obj).length;
+
+			for(var l in obj){
+				if(hardCutOff > Object.keys(obj).length * 0.9){
+					arr.push(obj[l].reduce(function(a, b){
+						return a + b;
+					}) / obj[l].length);
+					continue;
+				}
+				if(obj[l].length < averageL){
+					if(isDifferentFromMedian > len * 0.3){
+						arr.push(average);
+					}else{
+						arr.push(median);	
+					}
+				}else{
+					if(obj[l].length < maxL/2){
+						if(isDifferentFromMedian > len * 0.3){
+							arr.push(average);
+						}else{
+							arr.push(median);	
+						}	
+					}else{
+						arr.push(obj[l].reduce(function(a, b){
+							return a + b;
+						}) / obj[l].length);
+					}
+				}
+			}
+
+			if(typeof prev !== 'undefined'){
+				var i = 0;
+				prev.forEach(function(a){
+					// if(a === ""){
+					// 	console.log('WTF PREV');
+					// }
+					arr2 = arr2.concat(function(){
+						var tmp = [];
+						if(a === ''){
+							return [];
+						}
+						for(var m = arr3[i]; m < a; m++){
+							tmp.push(m);
+						}
+						i++;
+						return tmp; 
+					}());
+					
+				});
+				this.getLostNodesAtDepth.res[depth] = {
+					'lostNodes': arr2,
+					'averageValuesList': arr,
+					'average': arr.reduce(function(a, b){
+						return a + b;	
+					}) / arr.length
+				}
+				
+			}
+
+
+
+		};
+
+
+		this.getMedianBranchingFactor = function(sameDepthLevelNodes) {
+			sameDepthLevelNodes.sort(function(a, b){return a - b;});
+
+			return (sameDepthLevelNodes.length % 2 === 0 ? (sameDepthLevelNodes[sameDepthLevelNodes.length / 2] + sameDepthLevelNodes[(sameDepthLevelNodes.length / 2) - 1]) / 2 : sameDepthLevelNodes[Math.floor(sameDepthLevelNodes.length / 2)]);
+		};
 
 		this.ordering  = function(arr){
 			var i = 0;
@@ -446,7 +646,7 @@ var ChessBot = (function(){
 		    }
 		};
 
-		this.sendResult = function(tree){
+		this.sendResult = function(tree, branchingFactorObject){
 
 			if(self.isWorker){
 				self.postMessage(['positions', 'AI', false]);
@@ -458,7 +658,7 @@ var ChessBot = (function(){
 				// show remaining nodes amount on last tick
 				postNodes(undefined, 0, true);
 				progressBar(0, 0, true);
-				postPruning(0, 0, true);
+				postPruning(0, 0, true, branchingFactorObject);
 
 				// 50 ms to show last tick on progressbar, then hide it
 				setTimeout(function(){
@@ -492,6 +692,7 @@ var ChessBot = (function(){
 
 			var eval_obj = ai_settings.eval;
 			var output = ai_settings.output;
+			var branchingFactorObject = {};
 
 			//init tree
 			object.AI = true;
@@ -537,6 +738,9 @@ var ChessBot = (function(){
 				// ordering
 				// arr = this.orderingStrict(arr, branch[-1][3]);
 				arr = this.ordering(arr);
+
+				branchingFactorObject[current_depth] = branchingFactorObject[current_depth] || [];
+				branchingFactorObject[current_depth].push(arr.length);
 
 				for(var i = 0; i < arr.length; i++){
 
@@ -612,6 +816,10 @@ var ChessBot = (function(){
 
 						half_move.apply(this);
 
+						if(typeof branchingFactorObject[current_depth+1] !== 'undefined' ){
+							branchingFactorObject[current_depth+1].push('');
+						}
+
 						object.current_side = object.current_side === 'white' ? 'black' : 'white';
 						
 
@@ -650,6 +858,7 @@ var ChessBot = (function(){
 									trig = 1;
 
 									half_move.apply(this, [i]);
+
 
 									if(researchDepthMarker === current_depth){
 										researchDepthMarker = -1;
@@ -800,6 +1009,10 @@ var ChessBot = (function(){
 
 
 				}
+				if(current_depth+1 === depth){
+					branchingFactorObject['last'] = branchingFactorObject['last'] || [];
+					branchingFactorObject['last'].push([arr.length, i]);
+				}	
 			}.apply(this);
 			real.call = object.call;
 
@@ -810,7 +1023,7 @@ var ChessBot = (function(){
 			object.setSelfContext();
 
 			// real move
-			this.sendResult(tree);
+			this.sendResult(tree, branchingFactorObject);
 
 			
 			return tree[tree[-2]][4];
@@ -832,6 +1045,7 @@ var ChessBot = (function(){
 			var pruning = ai_settings.pruning;
 			var ordering = ai_settings.ordering;
 			var output = ai_settings.output;
+			var branchingFactorObject = {};
 			//init tree
 			object.AI = true;
 			var real = object;
@@ -873,9 +1087,11 @@ var ChessBot = (function(){
 				var arr = this.all_moves_side_func(object.current_side);
 
 				if(ordering === true){
-					// arr = this.orderingStrict(arr, branch[-1][3]);
 					arr = this.ordering(arr);
 				}
+				branchingFactorObject[current_depth] = branchingFactorObject[current_depth] || [];
+				branchingFactorObject[current_depth].push(arr.length);
+
 				for(var i = 0; i < arr.length; i++){
 
 					// fraction = parent fraction / arr.length
@@ -887,6 +1103,7 @@ var ChessBot = (function(){
 					///pruning
 					if(pruning === true){
 						if(this.pruning(branch) === 0){
+							
 							if(progressBar && postPruning){
 								progressBar((arr.length - i) * fraction);
 								postPruning((arr.length - i) * fraction);
@@ -938,6 +1155,11 @@ var ChessBot = (function(){
 						// }
 
 						half_move.apply(this);
+
+						if(typeof branchingFactorObject[current_depth+1] !== 'undefined' ){
+							branchingFactorObject[current_depth+1].push('');
+
+						}
 
 						//	branch after
 						// inner node
@@ -1065,6 +1287,11 @@ var ChessBot = (function(){
 
 					}
 				}
+				if(current_depth+1 === depth){
+					branchingFactorObject['last'] = branchingFactorObject['last'] || [];
+					branchingFactorObject['last'].push([arr.length, i]);
+
+				}	
 			}.apply(this);
 
 			real.call = object.call;
@@ -1076,7 +1303,7 @@ var ChessBot = (function(){
 			object.setSelfContext();
 
 			// real move
-			this.sendResult(tree);
+			this.sendResult(tree, branchingFactorObject);
 			
 			return tree[tree[-2]][4];
 		};

@@ -1113,8 +1113,20 @@ var positions = {
 
 		    },
 
-		    ai_output_pruning: function(fraction, scoutReserchedNodes){
+		    ai_output_pruning: function(fraction, scoutReserchedNodes, force){
 
+		    	if(force === 'force'){
+		    		if(typeof window !== 'undefined' && typeof window.requestAnimationFrame !== 'undefined'){
+
+		    			requestAnimationFrame(function(time){
+
+		    				positions.ai_pruning_elem.innerText = (fraction * 100).toFixed(2) + '%';
+
+		    			});
+
+		    		}
+		    		return;
+		    	}
 		    	if(scoutReserchedNodes){
 		    		//positions.ai_output_researched_sum = pruning  + evaluated nodes summary for research
 		    		// positions.ai_output_researched_sum + 1 = pruning  + common evaluated nodes summary for search + research

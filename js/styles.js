@@ -4,22 +4,39 @@
 (function(){
 	//radio buttons
 	var rads = document.querySelector('.game-auth').mode;
-	[].concat.apply(rads, document.querySelectorAll('.check_mode'));
-	var prev = null;
-	for(var i = 0; i < rads.length; i++){
-		rads[i].onclick = function(){
-			if(this !== prev){
-				prev = this;
+	// checked initialy
+	var prev = document.querySelector('#check_multi');
+	document.querySelector('#check_single').nextElementSibling.focus();
+
+	var modeToggle = function (e){
+		debugger;
+		if(e.type === 'keydown'){
+			if(e.keyCode !== 13){
+				return;
 			}
-			if(this.htmlFor === 'check_single' || this.dataset.check === 'single'){
-				document.querySelector('#game_pass').setAttribute('disabled', 'disabled');
-				document.querySelector('#game_name').setAttribute('disabled', 'disabled');
-			}
-			if(this.htmlFor === 'check_multi' || this.dataset.check === 'multi'){
-				document.querySelector('#game_pass').removeAttribute('disabled');
-				document.querySelector('#game_name').removeAttribute('disabled');
-			}
+			e.preventDefault();
 		}
+
+		if(prev !== this){
+			prev.removeAttribute("checked");
+			prev = this;
+		}
+		this.setAttribute("checked", "checked");
+
+		if(this.htmlFor === 'check_single' || this.dataset.check === 'single'){
+			document.querySelector('#game_pass').setAttribute('disabled', 'disabled');
+			document.querySelector('#game_name').setAttribute('disabled', 'disabled');
+			document.querySelector('.game-auth > input[type="submit"]').focus();
+		}
+		if(this.htmlFor === 'check_multi' || this.dataset.check === 'multi'){
+			document.querySelector('#game_pass').removeAttribute('disabled');
+			document.querySelector('#game_name').removeAttribute('disabled');
+			document.querySelector('.game-auth > #game_name').focus();
+		}
+	}
+	for(var i = 0; i < rads.length; i++){
+		rads[i].addEventListener('click', modeToggle);
+		rads[i].nextElementSibling.addEventListener('keydown', modeToggle.bind(rads[i]));
 	}
 
 	document.querySelector('.game-auth').addEventListener("submit", function(e){
@@ -406,9 +423,19 @@
 
 
 					console.log('ChessBot loaded');
-
+					// var aiTurn = 0;
 					document.body.addEventListener('AI_turn', function(){
 
+						// for cutoff acccuracy text
+						// aiTurn++;
+						// if(!!!(aiTurn % 2)){
+						// 	positions.tools.undo();
+						// 	positions.render();
+						// 	algorithm = 'minimax';
+						// }else{
+						// 	algorithm = 'alphaBeta';
+						// }
+						
 						// check if game is already finished (if mate)
 						var king = document.querySelector('.king_' + positions.current_side);
 						king.click();
@@ -420,7 +447,7 @@
 							return;
 						}
 
-						var obj = {},
+						var obj = {};
 							// bot = {},
 							algorithm = document.querySelector('input[name="check_algo"]:checked').value;
 
@@ -553,7 +580,15 @@
 										return;
 									}
 									if(property === 'pruning'){
-										positions.tools.ai_output_pruning(e.data[0], e.data[1]);
+										positions.tools.ai_output_pruning(e.data[0], e.data[1], e.data[2]);
+										return;
+									}
+								}
+
+								if(subject === 'storage'){
+									var property = e.data.shift();
+									if(property === 'cuttOffAccuracyTest'){
+										localStorage.setItem('cuttOffAccuracyTest', (localStorage.getItem('cuttOffAccuracyTest') ? (localStorage.getItem('cuttOffAccuracyTest') + ' ' + e.data.shift() + ' ' + e.data.shift() + ' ' + e.data.shift() + ' ' + e.data.shift()) : (e.data.shift() + ' ' + e.data.shift() + ' ' + e.data.shift() + ' ' + e.data.shift())));
 										return;
 									}
 								}
@@ -863,3 +898,74 @@ var loadScript = (function(){
 		return result;
 	};
 }());
+
+var testCutOffAcc = (function(){
+	return function(){
+		var str = localStorage.getItem('cuttOffAccuracyTest'),
+			arr = str.split(' '),
+			res = [],
+			resObj = {};
+
+		arr.forEach(function(a, index){
+			if(!(index % 8)){
+				res.push({
+					errHardPred: Math.abs(100 - (a / arr[index+4] * 100) - arr[index+2]),
+					errEasePred: Math.abs(100 - (a / arr[index+4] * 100) - arr[index+3]),
+					errMinimax: Math.abs((arr[index+1] - arr[index+4]) / arr[index+4] * 100)
+				});
+			}
+		});
+
+		resObj.average = (function(){
+			var r = {},
+				obj = res.reduce(function(a, b){
+					return {
+						errHardPred: a.errHardPred + b.errHardPred,
+						errEasePred: a.errEasePred + b.errEasePred,
+						errMinimax: a.errMinimax + b.errMinimax
+					}
+				});
+			for(var i in obj){
+				r[i] = obj[i] / (arr.length / 8);
+			}	
+			return r;
+		}());	
+
+		resObj.median = (function(){
+			var r = {},
+				tmp = {
+					errHardPred: [],
+					errEasePred: [],
+					errMinimax: []
+				};
+
+			res.forEach(function(a){
+				tmp.errHardPred.push(a.errHardPred);
+				tmp.errEasePred.push(a.errEasePred);
+				tmp.errMinimax.push(a.errMinimax);
+			});
+
+			for(var i in tmp){
+				r[i] = function(c){
+					c.sort(function(a, b){
+						return a - b;
+					});
+					return c.length % 2 !== 0 ? c[(c.length - 1) / 2] : (c[c.length / 2] + c[(c.length / 2) - 1]) / 2 ;
+				}(tmp[i]);
+			}
+
+			return r;
+		}());
+
+		console.log('Average: \n');
+		console.log('        errHardPred:' + resObj.average.errHardPred + '\n');
+		console.log('        errEasePred:' + resObj.average.errEasePred + '\n');
+		console.log('        errMinimaxPred:' + resObj.average.errMinimax + '\n');
+		console.log('Median: \n');
+		console.log('        errHardPred:' + resObj.median.errHardPred + '\n');
+		console.log('        errEasePred:' + resObj.median.errEasePred + '\n');
+		console.log('        errMinimaxPred:' + resObj.median.errMinimax + '\n')
+
+		localStorage.removeItem('cuttOffAccuracyTest');
+	}
+}()); 
