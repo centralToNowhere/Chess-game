@@ -230,25 +230,25 @@ input[data-check]:checked + label{
 .modal-block{
 	display: inline-block;
 	background: #fff;
-	width: 60%;
+	width: 400px;
 	vertical-align: middle;
 	text-align: center;
 	box-shadow: 0 -8px 16px 0 rgba(0,0,0,0.2), 0 8px 16px 0 rgba(0,0,0,0.2),0 6px 35px 0 rgba(0,0,0,0.19);
+	border-radius: 0.5vw;
 }
 .modal-block > p {
-    width: 90%;
-    padding-top: 4.5vw;
-    padding-bottom: 4.5vw;
+    padding-top: 20px;
+    padding-bottom: 20px;
     font-weight: 600;
-    font-size: 4.2vw;
+    font-size: 2em;
     display: inline-block;
 }
 .modal-block input[type="submit"]{
     display: block;
-    width: 40%;
-    margin: 0 auto 4.5vw auto;
-    line-height: 1.7;
-    font-size: 3.5vw;
+    width: 120px;
+    margin: 0 auto 30px auto;
+    line-height: 1.3;
+    font-size: 2em;
     text-align: center;
 	-webkit-transition: box-shadow 0.5s ease-out;
 	-moz-transition: box-shadow 0.5s ease-out;
@@ -719,13 +719,7 @@ media
 		margin-left: -40%;
 		top:-54px;
 	}
-	.modal-block {
-		width: 80%;
-	}
-	.modal-block > p {
-		line-height: 2;
-		font-size: 1.5em;
-	}
+
 	.textfield {
 		display: block;
 		width: 80%;
@@ -798,5 +792,21 @@ media
 	}
 	.container__metrics {
 		display: inline-block !important;
+	}
+	.modal-block {
+		width: 80%;
+	}
+	.modal-block > p {
+		line-height: 2;
+		font-size: 1.5em;
+		padding-top: 3vw;
+		padding-bottom: 3vw;
+	}
+	.modal-block input[type="submit"]{
+	    width: 40vw;
+	    margin: 0 auto 4.5vw auto;
+	    line-height: 1.7;
+	    font-size: 1.5em;
+	    margin-bottom: 6vw;
 	}
 }

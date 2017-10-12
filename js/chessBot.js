@@ -116,14 +116,17 @@ var ChessBot = (function(){
 							}
 
 							//for cutoff accuracy test
-							self.postMessage(['storage', 'cuttOffAccuracyTest',
-								object.call, (cutOffTrue + object.call), (1 - object.call / (cutOffTrue + object.call)).toFixed(4) * 100, (frSumBuffer + fractionSum).toFixed(4) * 100]);
-							console.log('Worker '+ object.call + '    ' + (cutOffTrue + object.call) + '   ' + (1 - object.call / (cutOffTrue + object.call)).toFixed(4) * 100 + '     '  + (frSumBuffer + fractionSum).toFixed(4) * 100);
+
+							// self.postMessage(['storage', 'cuttOffAccuracyTest',
+							// 	object.call, (cutOffTrue + object.call), (1 - object.call / (cutOffTrue + object.call)).toFixed(4) * 100, (frSumBuffer + fractionSum).toFixed(4) * 100]);
+							// console.log('Worker '+ object.call + '    ' + (cutOffTrue + object.call) + '   ' + (1 - object.call / (cutOffTrue + object.call)).toFixed(4) * 100 + '     '  + (frSumBuffer + fractionSum).toFixed(4) * 100);
 
 							delete bfactorObject;
-
+							fn.call(self, 1 - object.call / (cutOffTrue + object.call), researchedFractionSum, 'force');
+						}else{
+							fn.call(self, fractionSum, researchedFractionSum);
 						}
-						fn.call(self, 1 - object.call / (cutOffTrue + object.call), researchedFractionSum, 'force');
+
 						fractionSum = 0;
 						researchedFractionSum = 0;
 						frSumBuffer = 0;
@@ -657,6 +660,7 @@ var ChessBot = (function(){
 
 				// show remaining nodes amount on last tick
 				postNodes(undefined, 0, true);
+				debugger;
 				progressBar(0, 0, true);
 				postPruning(0, 0, true, branchingFactorObject);
 
@@ -739,8 +743,8 @@ var ChessBot = (function(){
 				// arr = this.orderingStrict(arr, branch[-1][3]);
 				arr = this.ordering(arr);
 
-				branchingFactorObject[current_depth] = branchingFactorObject[current_depth] || [];
-				branchingFactorObject[current_depth].push(arr.length);
+				// branchingFactorObject[current_depth] = branchingFactorObject[current_depth] || [];
+				// branchingFactorObject[current_depth].push(arr.length);
 
 				for(var i = 0; i < arr.length; i++){
 
@@ -816,9 +820,9 @@ var ChessBot = (function(){
 
 						half_move.apply(this);
 
-						if(typeof branchingFactorObject[current_depth+1] !== 'undefined' ){
-							branchingFactorObject[current_depth+1].push('');
-						}
+						// if(typeof branchingFactorObject[current_depth+1] !== 'undefined' ){
+						// 	branchingFactorObject[current_depth+1].push('');
+						// }
 
 						object.current_side = object.current_side === 'white' ? 'black' : 'white';
 						
@@ -1009,10 +1013,10 @@ var ChessBot = (function(){
 
 
 				}
-				if(current_depth+1 === depth){
-					branchingFactorObject['last'] = branchingFactorObject['last'] || [];
-					branchingFactorObject['last'].push([arr.length, i]);
-				}	
+				// if(current_depth+1 === depth){
+				// 	branchingFactorObject['last'] = branchingFactorObject['last'] || [];
+				// 	branchingFactorObject['last'].push([arr.length, i]);
+				// }	
 			}.apply(this);
 			real.call = object.call;
 
@@ -1023,7 +1027,9 @@ var ChessBot = (function(){
 			object.setSelfContext();
 
 			// real move
-			this.sendResult(tree, branchingFactorObject);
+			// this.sendResult(tree, branchingFactorObject);
+			this.sendResult(tree);
+
 
 			
 			return tree[tree[-2]][4];

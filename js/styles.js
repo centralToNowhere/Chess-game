@@ -427,6 +427,7 @@
 					document.body.addEventListener('AI_turn', function(){
 
 						// for cutoff acccuracy text
+						
 						// aiTurn++;
 						// if(!!!(aiTurn % 2)){
 						// 	positions.tools.undo();
@@ -435,7 +436,7 @@
 						// }else{
 						// 	algorithm = 'alphaBeta';
 						// }
-						
+
 						// check if game is already finished (if mate)
 						var king = document.querySelector('.king_' + positions.current_side);
 						king.click();
