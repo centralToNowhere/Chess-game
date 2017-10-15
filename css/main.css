@@ -674,16 +674,33 @@ chessBot
 /********************************************
 media
 ********************************************/
-@media (min-width: 510px) {
-	.board__cell{
-		height: 60px !important;
-	}
-}
 @media (min-width: 992px) {
 	.chat-container{
 		width:320px;
 	}
 }
+@media (min-width: 510px) {
+	.board__cell{
+		height: 60px !important;
+	}
+}
+@media (min-width: 1599px){
+	.board {
+		width: 960px;
+		height: 960px;
+		margin-top: -480px;
+		margin-left: -480px;
+	}
+
+	.board__cell {
+		height: 118.75px !important;
+	}
+	
+}
+
+
+
+
 @media (max-width: 400px){
 	.board{
 /*		width:100%;
@@ -718,6 +735,22 @@ media
 		left:50%;
 		margin-left: -40%;
 		top:-54px;
+	}
+	.modal-block {
+		width: 80%;
+	}
+	.modal-block > p {
+		line-height: 2;
+		font-size: 1.5em;
+		padding-top: 3vw;
+		padding-bottom: 3vw;
+	}
+	.modal-block input[type="submit"]{
+	    width: 40vw;
+	    margin: 0 auto 4.5vw auto;
+	    line-height: 1.7;
+	    font-size: 1.5em;
+	    margin-bottom: 6vw;
 	}
 
 	.textfield {
@@ -793,20 +826,6 @@ media
 	.container__metrics {
 		display: inline-block !important;
 	}
-	.modal-block {
-		width: 80%;
-	}
-	.modal-block > p {
-		line-height: 2;
-		font-size: 1.5em;
-		padding-top: 3vw;
-		padding-bottom: 3vw;
-	}
-	.modal-block input[type="submit"]{
-	    width: 40vw;
-	    margin: 0 auto 4.5vw auto;
-	    line-height: 1.7;
-	    font-size: 1.5em;
-	    margin-bottom: 6vw;
-	}
 }
+
+

@@ -203,23 +203,31 @@ var ChessBot = (function(){
 
 			if(branch[-1][3] === 'alpha'){
 				// value >= beta (beta cut-off)
-				if(branch[-1][0][0] > branch[-1][0][2]){
+				if(branch[-1][0][0] >= branch[-1][0][2]){
 					return 0;
 				}
 			}else{
 				// value <= alpha 
-				if(branch[-1][0][0] < branch[-1][0][1]){
+				if(branch[-1][0][0] <= branch[-1][0][1]){
 					return 0;
 				}
 			}
 
 		};
 
-		this.clearPrevSiblings = function(branchList, index){
-
+		this.clearPrevSiblings = function(branchList, index, saveCurrent){
+			var condition = false;
 			for(var key in branchList){
-				if( +key < index && +key !== -1 && +key !== -2){
-					branchList[key] = null;
+
+				if(saveCurrent){
+					condition = !!(+key < index);
+				}else{
+					condition = !!(+key == index);
+				}
+
+				if(condition && +key !== -1 && +key !== -2){
+					// branchList[key] = null;
+					delete branchList[key];
 				}
 			}
 
@@ -652,6 +660,7 @@ var ChessBot = (function(){
 		this.sendResult = function(tree, branchingFactorObject){
 
 			if(self.isWorker){
+				debugger;
 				self.postMessage(['positions', 'AI', false]);
 				self.postMessage(['positions', 'execute_move', tree[tree[-2]][4][0][0], tree[tree[-2]][4][0][1], tree[tree[-2]][4][1][0], tree[tree[-2]][4][1][1], tree[tree[-2]][4][1][2]]);
 				object.current_side = object.ai_side === 'white' ? 'black' : 'white';
@@ -660,7 +669,6 @@ var ChessBot = (function(){
 
 				// show remaining nodes amount on last tick
 				postNodes(undefined, 0, true);
-				debugger;
 				progressBar(0, 0, true);
 				postPruning(0, 0, true, branchingFactorObject);
 
@@ -841,7 +849,7 @@ var ChessBot = (function(){
 							if(null_search === 0){ // null window?
 
 								//re-search
-								if(i !== 0 &&  res > branch[0][1] && res < branch[0][2]){
+								if( (i !== 0 && res > branch[0][1] && res < branch[0][2] ) || ( (res === Number.POSITIVE_INFINITY || res === Number.NEGATIVE_INFINITY) && (branch[0][1] === res || branch[0][2] === res) ) ){
 									if(researchDepthMarker === -1){
 										research = true;
 										researchDepthMarker = current_depth-1;
@@ -885,6 +893,9 @@ var ChessBot = (function(){
 							if(res > branch[0][0]){
 								branch[0][0] = res;
 								branch[1][-2] = i;
+								debugger;
+								this.clearPrevSiblings(branch[1], i, true);
+							}else if(res !== branch[0][0]){
 								this.clearPrevSiblings(branch[1], i);
 							}
 							// value > alpha
@@ -898,7 +909,7 @@ var ChessBot = (function(){
 
 
 								//re-search
-								if(i !== 0 && res > branch[0][1] && res < branch[0][2]){
+								if( (i !== 0 && res > branch[0][1] && res < branch[0][2]) || ( (res === Number.POSITIVE_INFINITY || res === Number.NEGATIVE_INFINITY) && (branch[0][1] === res || branch[0][2] === res) ) ){
 
 									if(researchDepthMarker === -1){
 										research = true;
@@ -940,6 +951,8 @@ var ChessBot = (function(){
 							if(res < branch[0][0]){
 								branch[0][0] = res;
 								branch[1][-2] = i;
+								this.clearPrevSiblings(branch[1], i, true);
+							}else if(res !== branch[0][0]){
 								this.clearPrevSiblings(branch[1], i);
 							}
 							// value < beta
@@ -966,6 +979,8 @@ var ChessBot = (function(){
 							if(res > branch[0][0]){
 								branch[0][0] = res;
 								branch[1][-2] = i;
+								this.clearPrevSiblings(branch[1], i, true);
+							}else if(res !== branch[0][0]){
 								this.clearPrevSiblings(branch[1], i);
 							}
 							// value > alpha
@@ -979,6 +994,8 @@ var ChessBot = (function(){
 							if(res < branch[0][0]){
 								branch[0][0] = res;
 								branch[1][-2] = i;
+								this.clearPrevSiblings(branch[1], i, true);
+							}else if(res !== branch[0][0]){
 								this.clearPrevSiblings(branch[1], i);
 							}
 							// value < beta
@@ -1089,6 +1106,7 @@ var ChessBot = (function(){
 			// }
 			//build nodes
 			var half_move = function half_move(){
+				debugger;
 				object.current_move = 'true';
 				var arr = this.all_moves_side_func(object.current_side);
 
@@ -1199,6 +1217,8 @@ var ChessBot = (function(){
 							if(branch[0][0] < res){
 								branch[0][0] = res;
 								branch[1][-2] = i;
+								this.clearPrevSiblings(branch[1], i, true);
+							}else if(res !== branch[0][0]){
 								this.clearPrevSiblings(branch[1], i);
 							}
 							// if alpha < result
@@ -1210,6 +1230,8 @@ var ChessBot = (function(){
 							if(branch[0][0] > res){
 								branch[0][0] = res;
 								branch[1][-2] = i;
+								this.clearPrevSiblings(branch[1], i, true);
+							}else if(res !== branch[0][0]){
 								this.clearPrevSiblings(branch[1], i);
 							}
 							// if beta > result
@@ -1217,6 +1239,8 @@ var ChessBot = (function(){
 								branch[0][2] = res;
 							}
 						}
+
+
 						this.move_undo();
 
 						current_depth--;
@@ -1253,6 +1277,8 @@ var ChessBot = (function(){
 							if(branch[0][0] < res){
 								branch[0][0] = res;
 								branch[1][-2] = i;
+								this.clearPrevSiblings(branch[1], i, true);
+							}else if(res !== branch[0][0]){
 								this.clearPrevSiblings(branch[1], i);
 							}
 							// if alpha < value
@@ -1264,6 +1290,8 @@ var ChessBot = (function(){
 							if(branch[0][0] > res){
 								branch[0][0] = res;
 								branch[1][-2] = i;
+								this.clearPrevSiblings(branch[1], i, true);
+							}else if(res !== branch[0][0]){
 								this.clearPrevSiblings(branch[1], i);
 							}
 							// if beta > value 
