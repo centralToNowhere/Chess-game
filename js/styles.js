@@ -9,7 +9,6 @@
 	document.querySelector('#check_single').nextElementSibling.focus();
 
 	var modeToggle = function (e){
-		debugger;
 		if(e.type === 'keydown'){
 			if(e.keyCode !== 13){
 				return;
@@ -596,20 +595,37 @@
 
 							});
 							var partialCopy = {},
-								deletePositionsMethods = function(object){
+								copyPositionsProps = function(positionsObj){
 									var copy = {},
 										props = ['call', 'data', 'matrix', 'is_it_a_first_move', 'password', 'move_status', 'current_side', 'current_move', 'name', 'game_status', 'win', 'check', 'game_mode', 'ai_side', 'AI', 'moves_stack'];
 										
 									props.forEach(function(p){
-										copy[p] = object[p];
+										copy[p] = positionsObj[p];
 									});
 
 									return copy;
-								};
-								
-							partialCopy = deletePositionsMethods(positions); 
+								},
+								serializeObject = function(object){
+
+									var serialized = {};
+
+									Object.keys(object).forEach(function(key){
+										if(object[key] !== null && typeof object[key] === 'object'){
+											serialized[key] = serializeObject(object[key]);
+										}else if(object[key] !== null){
+											serialized[key] = object[key].toString();
+										}else{
+											serialized[key] = object[key];
+										}
+									});
+									
+									return serialized;
+								}
+							
+							partialCopy = copyPositionsProps(positions);
+							serializedPositions = serializeObject(positions); 
 							workerInProgress = true;
-							worker.postMessage([partialCopy, algorithm, obj]);
+							worker.postMessage([partialCopy, algorithm, obj, ChessBot.toString(), serializedPositions]);
 						}else{
 							execAlgorithm();
 						}

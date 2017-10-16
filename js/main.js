@@ -222,7 +222,6 @@ var positions = {
 
 				// red moves (attacks)
 				if( typeof pos_cells.possible_attacks != 'undefined' &&  pos_cells.possible_attacks.length !== 0){ 
-					debugger;
 					var red_cells = [];
 					for(var i = 0; i < this.board_cells.length; i++){
 						var j = Math.floor(i / 8);
@@ -242,7 +241,6 @@ var positions = {
 					document.addEventListener('click', function(){
 						var object = this;
 						return function removeDocumentRedClick(){
-							debugger;
 							object.move_status = null;
 							for(var n = 0; n < red_cells.length; n++){
 								object.board_cells[red_cells[n]].className = object.board_cells[red_cells[n]].className.replace(/ red/, "");

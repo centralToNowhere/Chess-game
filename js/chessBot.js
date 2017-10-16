@@ -660,7 +660,6 @@ var ChessBot = (function(){
 		this.sendResult = function(tree, branchingFactorObject){
 
 			if(self.isWorker){
-				debugger;
 				self.postMessage(['positions', 'AI', false]);
 				self.postMessage(['positions', 'execute_move', tree[tree[-2]][4][0][0], tree[tree[-2]][4][0][1], tree[tree[-2]][4][1][0], tree[tree[-2]][4][1][1], tree[tree[-2]][4][1][2]]);
 				object.current_side = object.ai_side === 'white' ? 'black' : 'white';
@@ -893,7 +892,6 @@ var ChessBot = (function(){
 							if(res > branch[0][0]){
 								branch[0][0] = res;
 								branch[1][-2] = i;
-								debugger;
 								this.clearPrevSiblings(branch[1], i, true);
 							}else if(res !== branch[0][0]){
 								this.clearPrevSiblings(branch[1], i);
@@ -1106,7 +1104,6 @@ var ChessBot = (function(){
 			// }
 			//build nodes
 			var half_move = function half_move(){
-				debugger;
 				object.current_move = 'true';
 				var arr = this.all_moves_side_func(object.current_side);
 
