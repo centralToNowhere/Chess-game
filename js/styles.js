@@ -519,8 +519,12 @@
 						}.bind(undefined, bot, algorithm, obj);
 
 						if(window.Worker){
+							
+							// var worker = new Worker('js/worker.js');
 
-							var worker = new Worker('js/worker.js');
+							var blob = new Blob(['self.addEventListener("message",function(e){self.isWorker=!0;var n=e.data[0],t=e.data[1],a=e.data[2],r=new Function("return "+e.data[3])(),c=function e(n){var t={},a=function(e){return/^function.*?(.*?)\\s*{(.|\\n)*}$/.test(e)};return Object.keys(n).forEach(function(r){a(n[r])?t[r]=new Function("return "+n[r])():null!==n[r]&&"object"==typeof n[r]?t[r]=e(n[r]):t[r]=n[r]}),t}(e.data[4]),u=function(){for(var e in n)c[e]=n[e];return c}(),s=new r(u);switch(s.set_side(u.current_side),t){case"minimax":case"alphaBeta":s.alphaBeta(a);break;case"negaScout":s.negascout(a)}});'], {type: 'application/javascript'});
+
+							var worker = new Worker(URL.createObjectURL(blob));
 
 							worker.addEventListener('message', function(e){
 								var subject = e.data.shift();
