@@ -1,0 +1,6 @@
+{
+  "plugins": [
+    "transform-inline-environment-variables"
+  ],
+  "sourceType": "script"
+}

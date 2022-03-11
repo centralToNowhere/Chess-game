@@ -6,7 +6,6 @@
 	var rads = document.querySelector('.game-auth').mode;
 	// checked initialy
 	var prev = document.querySelector('#check_multi');
-	document.querySelector('#check_single').nextElementSibling.focus();
 
 	var modeToggle = function (e){
 		if(e.type === 'keydown'){
@@ -47,6 +46,10 @@
 	    	e.returnValue = false;
 		}
 		if(document.querySelector('#check_multi').checked === true){
+			if (process.env.NO_MULTIPLAYER === "true") {
+				alert("Mode is not available with static web server");
+				return;
+			}
 
 			//multiplayer
 			(function(){
@@ -738,24 +741,24 @@
 		}
 		document.querySelector('.ai-settings__x-mark-menu').firstElementChild.addEventListener('click', function(e){
 			e.stopPropagation();
-			this.parentNode.parentNode.parentNode.classList.remove('row_compressed');
+			this.parentNode.parentNode.parentNode.classList.remove('row-compressed');
 
 		});
 		document.querySelector('.ai-settings__x-mark-menu').firstElementChild.addEventListener('keydown', function(e){
 			if(e.keyCode == '13'){
-				this.parentNode.parentNode.parentNode.classList.remove('row_compressed');
+				this.parentNode.parentNode.parentNode.classList.remove('row-compressed');
 			}
 
 		});
 
 		document.querySelector('.container__menu-button').addEventListener('click', function(e){
 			e.stopPropagation();
-			this.parentNode.parentNode.parentNode.classList.add('row_compressed');
+			this.parentNode.parentNode.parentNode.classList.add('row-compressed');
 
 		});
 		document.querySelector('.container__menu-button').addEventListener('keydown', function(e){
 			if(e.keyCode == '13'){
-				this.parentNode.parentNode.parentNode.classList.add('row_compressed');
+				this.parentNode.parentNode.parentNode.classList.add('row-compressed');
 			}
 
 		});	

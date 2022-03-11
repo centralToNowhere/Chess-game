@@ -1,7 +1,12 @@
 {
   "name": "Chess-app",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "dependencies": {
     "js-md5": "^0.4.1"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.17.6",
+    "@babel/core": "^7.17.5",
+    "babel-plugin-transform-inline-environment-variables": "^0.4.3"
   }
 }

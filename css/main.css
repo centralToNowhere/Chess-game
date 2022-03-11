@@ -657,7 +657,7 @@ chessBot
 	-o-transition: padding-left 1s ease-out;
 
 }
-.row_compressed{
+.row-compressed{
 	padding-left: 320px;
 
 }
@@ -684,21 +684,6 @@ media
 		height: 60px !important;
 	}
 }
-@media (min-width: 1599px){
-	.board {
-		width: 960px;
-		height: 960px;
-		margin-top: -480px;
-		margin-left: -480px;
-	}
-
-	.board__cell {
-		height: 118.75px !important;
-	}
-	
-}
-
-
 
 
 @media (max-width: 400px){

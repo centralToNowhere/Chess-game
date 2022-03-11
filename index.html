@@ -11,7 +11,7 @@
 </head>
 <body>
 	<div class="game-canvas container-fluid">
-		<div class="row">
+		<div class="row row-compressed">
 			<div class="ai-settings">
 				<div class="ai-settings__x-mark-menu">
 					<img src="./images/x-mark.png" tabindex="2">
@@ -117,16 +117,16 @@
 		<form class="game-auth" name="game-auth" method="GET">
 			<div class="check_mode_block">
 				<div data-check-container>
-					<input id="check_multi" data-check="multi" name="mode" type="radio" checked="true" value="multi">
-					<label class="check_mode" for="check_multi" tabindex="2">With player</label>
+					<input id="check_multi" data-check="multi" name="mode" type="radio" value="multi">
+					<label class="check_mode" for="check_multi" tabindex="0">With player</label>
 				</div>
 				<div data-check-container>
-					<input id="check_single" data-check="single" name="mode" type="radio" value="single">
-					<label class="check_mode" for="check_single" tabindex="1">With AI</label>
+					<input id="check_single" data-check="single" name="mode" type="radio" checked value="single">
+					<label class="check_mode" for="check_single" tabindex="0">With AI</label>
 				</div>
 			</div>
-			<input id="game_name" class="textfield" type="text" data-textfield="" placeholder="match name">
-			<input id="game_pass" class="textfield" type="password" data-textfield="" placeholder="password">
+			<input id="game_name" class="textfield" disabled type="text" data-textfield="" placeholder="match name">
+			<input id="game_pass" class="textfield" disabled type="password" data-textfield="" placeholder="password">
 			<input class="textfield" type="submit" data-auth-submit="" value="Start match">
 		</form>
 	</div>
