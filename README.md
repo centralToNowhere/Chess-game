@@ -1,9 +1,9 @@
 # Chess-game
-### A simple JavaScript chess engine with UI and settings
+### Simple JavaScript chess engine with UI and settings
 it is possible to play online with people, but you need to run Node.js server for it.<br>
 The project has been made mostly for experimenting and learning JavaScript<br>
 
-A codebase is awful, btw
+Codebase is awful, btw
 
 # Run locally
 First, you need to have `Node.js` and `npm` installed, than<br>
