@@ -5,6 +5,8 @@ The project has been made mostly for experimenting and learning JavaScript<br>
 
 Codebase is awful, btw
 
+# Demo
+https://centraltonowhere.github.io/Chess-game
 # Run locally
 First, you need to have `Node.js` and `npm` installed.<br>
 ```
