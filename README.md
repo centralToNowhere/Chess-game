@@ -6,9 +6,12 @@ The project has been made mostly for experimenting and learning JavaScript<br>
 Codebase is awful, btw
 
 # Run locally
-First, you need to have `Node.js` and `npm` installed, then<br>
-`npm i`<br>
-`node ./server.js`<br>
+First, you need to have `Node.js` and `npm` installed.<br>
+```
+npm i
+npm run build
+node server.js
+```
 Now project is available on `localhost:4000`
 # Online mode
 1. create game name and remember it
