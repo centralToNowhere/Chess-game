@@ -7,6 +7,12 @@
   "devDependencies": {
     "@babel/cli": "^7.17.6",
     "@babel/core": "^7.17.5",
-    "babel-plugin-transform-inline-environment-variables": "^0.4.3"
+    "babel-plugin-transform-inline-environment-variables": "^0.4.3",
+    "cross-env": "^7.0.3",
+    "uglify-js": "^3.15.3"
+  },
+  "scripts": {
+    "build": "cross-env NO_MULTIPLAYER=false ./build.sh",
+    "build:gh": "cross-env NO_MULTIPLAYER=true ./build.sh"
   }
 }

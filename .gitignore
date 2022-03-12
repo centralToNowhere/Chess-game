@@ -1,3 +1,5 @@
 /node_modules
 /Screenshots
 /data.json
+dist
+.idea

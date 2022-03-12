@@ -2,16 +2,18 @@ var http = require('http');
 var fs = require('fs');
 var url = require('url');
 var md5 = require('js-md5');
+var path = require("path");
 //var chessBot = require('./chessBot');
 const DATA = "/data.json";
 const querystring = require('querystring');
+const publicFolder = "/dist";
 
 http.createServer(function(req, res) {
     var urlParsed = url.parse(req.url);
     req.setEncoding('utf8');
     switch (urlParsed.pathname) {
         case '/':
-            sendFile("/index.html", res);
+            sendFile(path.join(publicFolder, "index.html"), res);
             break;
 
         //// create game/login ////
@@ -111,7 +113,7 @@ http.createServer(function(req, res) {
                 urlParsed.pathname.match(/\/js\/+./) || 
                 urlParsed.pathname.match(/\/images\/+./)){
 
-                sendFile(urlParsed.pathname, res);
+                sendFile(path.join(publicFolder, urlParsed.pathname), res);
 
             }else{
                 res.statusCode = 404;

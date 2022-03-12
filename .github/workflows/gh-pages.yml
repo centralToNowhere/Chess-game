@@ -19,12 +19,8 @@ jobs:
       - name: Install deps
         run: npm ci
 
-      - run: |
-          mkdir dist \
-          && npx -c "NO_MULTIPLAYER=true babel js --out-dir ./dist/js" \
-          && cp -r css ./dist/css \
-          && cp -r images ./dist/images \
-          && cp index.html ./dist/index.html
+      - name: Build
+        run: npm run build:gh
 
       - name: Deploy 🚀
         id: Deploy

@@ -46,8 +46,7 @@
 	    	e.returnValue = false;
 		}
 		if(document.querySelector('#check_multi').checked === true){
-			if (typeof process === "object" && process
-				&& process?.env?.NO_MULTIPLAYER === "true") {
+			if (process.env.NO_MULTIPLAYER === "true") {
 				alert("Mode is not available with static web server");
 				return;
 			}
