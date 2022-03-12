@@ -6,7 +6,7 @@ The project has been made mostly for experimenting and learning JavaScript<br>
 Codebase is awful, btw
 
 # Run locally
-First, you need to have `Node.js` and `npm` installed, than<br>
+First, you need to have `Node.js` and `npm` installed, then<br>
 `npm ci`<br>
 `node ./server.js`<br>
 Now project is available on `localhost:4000`
