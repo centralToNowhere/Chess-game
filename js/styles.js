@@ -51,7 +51,7 @@
     }
 
     if (document.querySelector('#check_multi').checked === true) {
-      if ("true" === "true") {
+      if (typeof process === "object" && process && process?.env?.NO_MULTIPLAYER === "true") {
         alert("Mode is not available with static web server");
         return;
       } //multiplayer
