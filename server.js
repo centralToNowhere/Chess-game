@@ -139,10 +139,9 @@ http.createServer(function(req, res) {
 
 // })(), 1000); // 15 min
 console.log('Server is running');
-writeDB({}, 'wx'); // create data.json if doesn't exist / do nothing if exists
-scanActiveGame();
+writeDB({}, 'wx', scanActiveGame); // create data.json if doesn't exist / do nothing if exists
 
-function writeDB(gameObject, flag){
+function writeDB(gameObject, flag, onEnd){
     writeDB.queue = writeDB.queue || [];
     writeDB.runing = writeDB.runing || false;
 
@@ -155,17 +154,19 @@ function writeDB(gameObject, flag){
 
     if(!writeDB.runing && writeDB.queue.length !== 0){
         writeDB.runing = true;
-        var writeStream = fs.createWriteStream(__dirname + DATA, writeDB.queue[0][1]);
+        var writeStream = fs.createWriteStream(path.join(__dirname, DATA), writeDB.queue[0][1]);
         writeStream.write(JSON.stringify(writeDB.queue[0][0]));
         writeStream.end(function(){
             writeDB.queue.shift();
             writeDB.runing = false;
-            writeDB();
+
+            if (typeof onEnd === "function") {
+                onEnd();
+            }
         });
         writeStream.on('error',function(e){
             writeDB.queue.shift();
             writeDB.runing = false;
-            writeDB();
         });
     }
 
@@ -180,7 +181,7 @@ function scanActiveGame(games_old){
         save = [],
         readStream = null;
 
-    readStream = fs.createReadStream(__dirname + DATA);
+    readStream = fs.createReadStream(path.join(__dirname, DATA));
 
     readStream
         .on('readable', function(){
@@ -230,7 +231,7 @@ function deleteGame(save, games_old){
 }
 
 function sendFile(fileName, res) {
-    var fileStream = fs.createReadStream(__dirname + fileName);
+    var fileStream = fs.createReadStream(path.join(__dirname, fileName));
     fileStream
         .on('error', function() {
         res.statusCode = 500;
@@ -259,7 +260,7 @@ function auth_validate(data, res){
     var data = JSON.parse(data);
     var file = '';
     if(data.name.match(/^[A-Za-z0-9]{3,12}$/) && data.password.match(/^[A-Za-z0-9]{3,12}$/)){
-        var readStream = fs.createReadStream(__dirname + DATA);
+        var readStream = fs.createReadStream(path.join(__dirname, DATA));
         readStream
             .on('error', function() {
                 res.statusCode = 500;
@@ -453,7 +454,7 @@ var chess = {
         console.log('Publish', data)
         var updates = JSON.parse(data);
         var games = '';
-        var readStream = fs.createReadStream(__dirname + DATA);
+        var readStream = fs.createReadStream(path.join(__dirname, DATA));
         readStream
             .on('error', function() {
                 return;
