@@ -7,7 +7,7 @@ Codebase is awful, btw
 
 # Demo
 https://centraltonowhere.github.io/Chess-game
-# Run locally
+# Run
 First, you need to have `Node.js` and `npm` installed.<br>
 ```
 npm i
